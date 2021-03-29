@@ -27,13 +27,15 @@
 #include "blf/dynamicwriteable.hpp"
 #include "blf/dynamicreadable.hpp"
 
+#include "blf/datagroup.hpp"
+
 // BLF version info. VERSION 1.0.0
 const int32_t BLFMAJOR = 1;
 const int32_t BLFMINOR = 0;
 const int32_t BLFFIX   = 0;
 
 const char* BLFSIGNATURE = "BLFF";
-const int TEST_TILES = 5;
+const int TEST_TILES = 20;
 
 const char* BLF_TILE_NAME = "Tile";
 
@@ -47,16 +49,6 @@ const char* BLF_TILE_NAME = "Tile";
 #define STRDUP(x) strdup(x)
 #endif
 
-// A way of storing object data without knowing what kind of object it is.
-class Object
-{
-	public:
-		std::vector<blf::ObjectAttribute> attributes;
-		blf::ForeignAttributeTable foreignAttributes;
-		blf::ObjectDefinition* definition;
-
-};
-
 class Texture : public blf::TemplateObject
 {
 	public:
@@ -69,7 +61,7 @@ class Texture : public blf::TemplateObject
 			this->filePath = filePath;
 		}
 
-		const char* getObjectName() override
+		const char* getObjectName() const  override
 		{
 			return "Texture";
 		}
@@ -102,7 +94,7 @@ class testObject : public blf::TemplateObject
 		int aRandomNumber;
 		blf::String aString;
 
-		const char* getObjectName() override
+		const char* getObjectName() const override
 		{
 			return "testObject";
 		};
@@ -147,7 +139,7 @@ class Tile : public blf::TemplateObject
 			this->texture = texture;
 		}
 
-		const char* getObjectName() override
+		const char* getObjectName() const override
 		{
 			return "Tile";
 		};
@@ -157,7 +149,7 @@ class Tile : public blf::TemplateObject
 			return
 			{
 				{"ID", &ID, blf::TYPE_STRING},
-				{"x", &x, blf::TYPE_DOUBLE},
+				{"x", &x, blf::TYPE_FLOAT},
 				{"y", &y, blf::TYPE_DOUBLE},
 				{"z", &z, blf::TYPE_DOUBLE},
 				{"texture", &texture, blf::TYPE_OBJECTREFERENCE, "Texture"}
@@ -184,7 +176,7 @@ class StateTile : public Tile
 		{
 			return
 			{
-				{"x", &x, blf::TYPE_FLOAT },
+				{"x", &x, blf::TYPE_DOUBLE },
 				{"state", &state, blf::TYPE_INT},
 				{"y", &y, blf::TYPE_DOUBLE},
 				{"z", &z, blf::TYPE_DOUBLE},
@@ -205,7 +197,6 @@ void initializeDefinition(blf::TemplateObject* obj, blf::ObjectDefinition* defin
 	definition->identifier = obj->getObjectName();
 	definition->templatePointer = obj;
 	definition->attributes = obj->getAttributeMap();
-	std::cout << obj->getObjectName() << std::endl;
 }
 
 template<typename T, typename = std::enable_if<std::is_base_of<blf::TemplateObject, T>::value>>
@@ -235,7 +226,7 @@ void writetest()
 	blf::ObjectTable objects = {
 		createDefinition<testObject>(),
 		createDefinition<Texture>(),
-		createDefinition<StateTile>(),
+		createDefinition<Tile>(),
 	};
 
 	srand(time(0));
@@ -255,13 +246,11 @@ void writetest()
 		std::string test = "Tile " + std::to_string(i);
 
 		tiles.emplace_back(
-            //new Tile(
-                test,
-                5,
-                6,
-                4,
-                &textures[rand() % 4]
-                //)
+            test,
+            5,
+            6,
+            4,
+            &textures[rand() % 4]
         );
 
 		data.addObject(&(tiles[i]));
@@ -277,34 +266,15 @@ void writetest()
 	data.computeCommonTable(common, objects);
 	data.buildArray();
 
-	//testObject test;
-	//test.aString = "VROOOOOOOOOOOOOOOOOOOOOOOOOM\0";
-	//common.addCommonObject(&test);
-
 	common.buildCommonObjectArray();
 	writer.storeCommonTable(&common);
-	std::cout << "Common Table Size: " << common.getArraySize() << std::endl;
-
-    std::cout << "1" << std::endl;
     
 	writer.dynamicWrite(&header);
-    
-    std::cout << "2" << std::endl;
-    
 	writer.writeObjectTable(&objects);
-    
-    std::cout << "3" << std::endl;
-
 	writer.writeCommonTable(&common); // ERROR HERE
-
-    std::cout << "4" << std::endl;
-
-    std::cout << "Writing Table Size: " << data.getArraySize() << std::endl;
+    
     writer.writeDataTable(&data);
-
-    std::cout << "5" << std::endl;
-    //writer.wr
-
+    
 	auto t2 = std::chrono::high_resolution_clock::now();
 	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
 
@@ -351,78 +321,22 @@ void readtest()
 	blf::InformationHeader fileInfo = levelReader.dynamicRead<blf::InformationHeader>();
 	blf::ObjectTable objects = {
 		createDefinition<Texture>(),
-		createDefinition<Tile>(),
+		createDefinition<StateTile>(),
 	};
 
-	std::cout << "Object Table" << std::endl;
-
 	levelReader.readObjectTable(&objects);
-	for (int i = 0; i < objects.getSize(); i++)
-	{
-		blf::ObjectDefinition* definition = objects.getDefinitionFromIndex(i);
-		
-		std::cout << "Definition: " << i
-			<< "\t - ATTRIBUTES: " 
-			<< definition->attributes.size()
-			<< "\t - FOREIGN: " << ((definition->isForeign) ? ("Y") : ("N")) << std::endl;
-		std::cout << "- ID: " << definition->identifier << std::endl;
-		for (int j = 0; j < definition->attributes.size(); j++)
-		{
-			blf::ObjectAttribute& attribute = definition->attributes[j];
-			std::cout << "\t- Attribute " << j << std::endl;
-			std::cout << "\t  - NAME: " << attribute.name << std::endl;
-			std::cout << "\t  - FOREIGN: " << attribute.isForeign << std::endl;
-			std::cout << "\t  - TYPE: " << attribute.attribType << std::endl;
-			if (attribute.attribType == blf::TYPE_OBJECTREFERENCE)
-			{
-				const char* referencedType = attribute.referencedType;
-				std::cout << "\t    - REFTYPE: " << ((referencedType == nullptr) ? "Invalid/NULL" : referencedType) << std::endl;
-			}
-		}
-	}
-	
+    
 	blf::CommonTable common = levelReader.readCommonTable(&objects);
     common.buildCommonObjectArray();
 
-	std::cout << "Common Table Size: " << common.getArraySize() << std::endl;
-
-	for (blf::TemplateObject* tex : common)
-	{
-		for (blf::ObjectAttribute attrib : tex->getAttributeMap())
-		{
-			std::cout << attrib.name << ": ";
-			switch (attrib.attribType)
-			{
-			case blf::TYPE_STRING:
-				blf::String* string = (blf::String*)attrib.offset;
-				std::cout << *string;
-				break;
-			}
-			std::cout << std::endl;
-		}
-	}
-	
 	blf::DataTable data;
 	levelReader.readDataTable(&data, &objects, &common);
     data.buildArray();
     
-    std::cout << "Array: " << data.getArraySize() << std::endl;
-    
-    /*for( blf::TemplateObject* obj : data )
+    for( StateTile* tilePtr : data.get<StateTile>() )
     {
-        for( blf::ObjectAttribute attrib : obj->getAttributeMap())
-        {
-            std::cout << attrib.name << ": ";
-			switch (attrib.attribType)
-			{
-			case blf::TYPE_STRING:
-				blf::String* string = (blf::String*)attrib.offset;
-				std::cout << *string;
-				break;
-			}
-			std::cout << std::endl;
-        }
-    }*/
+        std::cout << tilePtr->y << std::endl;
+    }
 
 	auto t4 = std::chrono::high_resolution_clock::now();
 	auto duration2 = std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3).count();
@@ -432,15 +346,17 @@ void readtest()
 /*
 	TASKS:
 	-	Finish write logic. [Y.D]
-	-	Translate that logic to make matching reading logic.
+	-	Translate that logic to make matching reading logic. [Y.D]
 
-	-	Document all the classes
+	-	Document all the classes * - keep till last
 	-	Move the header defined functions in reader.hpp and writer.hpp into their respective source files.
-	-	Make a function that can simplify this entire process.
+	-	Make a function that can simplify this entire process. 
 
-	-	Create the DataTable class.
+	-	Create the DataTable class. [Y.D]
+	
+	-   Debug output, might be useful in the future.
 
-	-	Group read objects by type, allow DataTable to return list of pointers to all objecs of a group.
+	-	Group read objects by type, allow DataTable to return list of pointers to all objects of a group. [Y.D]
 */
 
 int main()
@@ -448,6 +364,21 @@ int main()
 	std::cout << "begin" << std::endl;
 	writetest();
 	readtest();
+
+	blf::TemplateObject** textures = new blf::TemplateObject*[4];
+	textures[0] = new Texture("grass.png");
+	textures[1] = new Texture("dirt.png");
+	textures[2] = new Texture("crate.png");
+	textures[3] = new Texture("metalblock.png");
+    
+    blf::DataGroup<Texture> testGroup(textures);
+    testGroup.addIndex(1);
+    testGroup.addIndex(2);
+    for(Texture* test : testGroup)
+    {
+        std::cout << test->filePath << std::endl;
+    }
+
 	//for (Tile tile : tiles)
 	{
 		//std::cout << tile.ID << ", " << tile.x << ", " << tile.y << ", " << tile.z << std::endl;

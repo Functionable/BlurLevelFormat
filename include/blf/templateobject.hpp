@@ -15,7 +15,7 @@ namespace blf
 		public:
 			uint64_t commonTableIndex = 0;
 
-			virtual const char* getObjectName() = 0;
+			virtual const char* getObjectName() const = 0;
 			virtual std::vector<blf::ObjectAttribute> getAttributeMap() = 0;
 
 			// You really shouldn't touch this, unless you're the one that's handling this function.

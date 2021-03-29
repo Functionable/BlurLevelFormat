@@ -1,9 +1,10 @@
 #include "blf/datatable.hpp"
 
 #include <map>
-#include <algorithm>
+#include <cstring>
 #include <iterator>
 #include <iostream>
+#include <algorithm>
 
 namespace blf
 {
@@ -49,22 +50,15 @@ namespace blf
 			}
 		}
 		
-		std::cout << "Pointer tables built" << std::endl;
-
 		int index = 0;
-        std::cout<< referencedPointers.size() << std::endl;
 		for (auto& pair : referencedPointers)
 		{
-            std::cout << pair.first << std::endl;
 			// If the reference count is above the treshold.
 			if (pair.second > COMMONTABLE_THRESHOLD)
 			{
-                //std::cout << index << std::endl;
 				//pointerIndexes.insert({ pair.first, index });
 				table.addCommonObject((TemplateObject*)pair.first);
-				
-                //std::cout << "Added" << std::endl;
-                
+				                
 				// Removing all of the occurences of the common object from the data table.
 				m_objectList.erase(std::remove(m_objectList.begin(), m_objectList.end(), pair.first), m_objectList.end());
 
@@ -100,6 +94,9 @@ namespace blf
 		m_objectList.clear();
 	}
 
+    //template<typename T, typename = std::enable_if_t<std::is_base_of_v<TemplateObject, T>>>
+    //DataGroup<T> DataTable::get()
+ 
 	// Remember, these only return positions IN the BUILT ARRAY!
 	TemplateObject** DataTable::begin() { return &m_objectArray[0]; }
 
