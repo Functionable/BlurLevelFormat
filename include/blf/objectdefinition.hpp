@@ -32,7 +32,9 @@ namespace blf
 		 * by the blf::Reader. Shows which attributes are active, or in other
 		 * words, which ones are defined and supported by the file.
 		 */
-		std::vector<int> activeAttributeIndexes;
+		std::vector<int> activeAttributeIndexes;  
+        
+        uint32_t activeAttributeCount = 0;
 	};
     
     ObjectAttribute* getObjectAttributeByIdentifier(ObjectDefinition* definition, String identifier);

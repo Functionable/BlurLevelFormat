@@ -32,4 +32,34 @@ namespace blf
 				return 8;
 		}
 	}
+	
+    BLF_TYPECATEGORY getTypeCategory(BLF_TYPE type)
+    {
+        switch(type)
+        {
+            case TYPE_NULL:
+                return CATEGORY_NONE;
+                
+            case TYPE_INT:
+                return CATEGORY_NUMERICINTEGER;
+                
+            case TYPE_FLOAT:
+                return CATEGORY_NUMERICFLOAT;
+                
+            case TYPE_BOOL:
+                return CATEGORY_NUMERICINTEGER;
+                
+            case TYPE_DOUBLE:
+                return CATEGORY_NUMERICFLOAT;
+                
+            case TYPE_STRING:
+                return CATEGORY_STRING;
+                
+            case TYPE_OBJECTREFERENCE:
+                return CATEGORY_OBJECTREFERENCE;
+                
+            case TYPE_LONG:
+                return CATEGORY_NUMERICFLOAT;
+        }
+    }
 }

@@ -85,6 +85,8 @@ namespace blf
 			 *  misuse will cause the filesize to increase greatly due to how BLF references work.
 			 */
 			void forceListAsArray(std::vector<TemplateObject*>* list);
+            
+            TemplateObject* operator[](const int index);
 
 			/* These are to support foreach loops in c++ */
 			/* Note: These functions WILL pull from the array, not the internal list. */

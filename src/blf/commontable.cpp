@@ -133,6 +133,11 @@ namespace blf
 		computeIndexerSize();
 	}
 
+    TemplateObject* CommonTable::operator[](const int index)
+    {
+        return m_builtArray[index];
+    }
+	
 	// Remember, these only return positions IN the BUILT ARRAY!
 	TemplateObject** CommonTable::begin() { return &m_builtArray[0]; }
 

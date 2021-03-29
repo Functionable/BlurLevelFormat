@@ -16,6 +16,15 @@ namespace blf
 		TYPE_LONG = 64, /**Represents an int64_t*/
 	};
 
+    enum BLF_TYPECATEGORY
+    {
+        CATEGORY_NONE,
+        CATEGORY_OBJECTREFERENCE,
+        CATEGORY_NUMERICFLOAT,
+        CATEGORY_NUMERICINTEGER,
+        CATEGORY_STRING,
+    };
+    
 	enum BLF_FLAG
 	{
 		FLAG_NOTHING = 0, /** No flag */
@@ -28,4 +37,5 @@ namespace blf
 	const int SIZE_DYNAMIC = -1;
 
 	int8_t sizeOfType(BLF_TYPE type);
+    BLF_TYPECATEGORY getTypeCategory(BLF_TYPE type);
 }

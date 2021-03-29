@@ -127,7 +127,6 @@ namespace blf
 					void* location = getPointerFromOffset(obj, offset);
 					int8_t size = sizeOfType(objectAttribute->attribType);
 
-					//write((uint8_t)i);
 					dynamicWrite(&objectAttribute->name);
 					if (size != -1)
 					{
@@ -135,16 +134,14 @@ namespace blf
 					}
 					else
 					{
-						switch (objectAttribute->attribType)
-						{
-							case TYPE_STRING:
-								dynamicWrite(((String*)location));
-								break;
-							case TYPE_OBJECTREFERENCE:
+                        if( objectAttribute->attribType == TYPE_STRING )
+                        {
+                            dynamicWrite(((String*)location));
+                        }
+                        else if(objectAttribute->attribType == TYPE_OBJECTREFERENCE)
+                        {
 								TemplateObject* object = (TemplateObject*)location;
-                                std::cout << "indexer size " << (int)m_commonTable->getIndexerSize() << std::endl;
 								writeIndexer(object->commonTableIndex, m_commonTable->getIndexerSize());
-								break;
 						}
 					}
 				}
