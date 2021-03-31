@@ -10,7 +10,6 @@ RM=rm -rf
 # Location of the output executable.
 OUT=./bin/BLF
 
-
 # SRC folder is where the .cpp and .c files are located, OBJFOLDER is where the compiled .o files are.
 OBJFOLDER=./build/objects
 SRCFOLDER=./src
@@ -76,30 +75,6 @@ $(OUT): $(OBJECTNAMES)
 	@echo -e "$(no_color)Launching $(yellow)$(notdir $(OUT))...$(no_color)"
 	@$(OUT)
 
-./include/ft2build.h.gch: ./include/ft2build.h
-		$(GXX) -I $(INCLUDES) ./include/ft2build.h
-
-./include/glm/glm.hpp.gch: ./include/glm/glm.hpp
-		$(GXX) -I $(INCLUDES) ./include/glm/glm.hpp
-
-./include/glm/gtc/type_ptr.hpp.gch: ./include/glm/gtc/type_ptr.hpp
-		$(GXX) -I $(INCLUDES) ./include/glm/gtc/type_ptr.hpp
-
-./include/glm/gtc/matrix_transform.hpp.gch: ./include/glm/gtc/matrix_transform.hpp
-		$(GXX) -I $(INCLUDES) ./include/glm/gtc/matrix_transform.hpp
-
-./include/lua/lua.hpp.gch: ./include/lua/lua.hpp
-		$(GXX) -I $(INCLUDES) ./include/lua/lua.hpp
-
-./include/stb/stb_image.h.gch: ./include/stb/stb_image.h
-		$(GXX) -I $(INCLUDES) ./include/stb/stb_image.h
-
-./include/GLFW/glfw3.h.gch: ./include/GLFW/glfw3.h
-		$(GXX) -I $(INCLUDES) ./include/GLFW/glfw3.h
-
-./include/glad/glad.h.gch: ./include/glad/glad.h
-		$(GXX) -I $(INCLUDES) ./include/glad/glad.h
-
 windows: $(MINGWOBJECTS) $(MINGWADDITIONAL) $(BUILDFILE)
 		@echo -e "$(no_color)Linking $(yellow)$(notdir $(OUT))...$(no_color)"
 		@$(WINDOWSGXX) -std=c++17 $(MINGWADDITIONAL) $(MINGWOBJECTS) -L $(LIBS)/mingw64 -I $(INCLUDES) $(WINDOWSCXXFLAGS) -o $(OUT).exe
@@ -108,9 +83,12 @@ windows: $(MINGWOBJECTS) $(MINGWADDITIONAL) $(BUILDFILE)
 		@echo -e "$(no_color)Launching $(yellow)$(notdir $(OUT))...$(no_color)"
 		@$(OUT).exe 
 
-clean:
+clean: $(OBJFOLDER)
 	@echo -e "$(no_color)Removing $(yellow)'$(OBJFOLDER)'$(no_color)..."
 	@$(RM) $(OBJFOLDER)
 
 run:
 	@$(OUT)
+
+runwindows:
+	@$(OUT).exe

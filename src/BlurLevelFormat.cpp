@@ -1,3 +1,4 @@
+#include <ios>
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -149,7 +150,7 @@ class Tile : public blf::TemplateObject
 			return
 			{
 				{"ID", &ID, blf::TYPE_STRING},
-				{"x", &x, blf::TYPE_FLOAT},
+				{"x", &x, blf::TYPE_DOUBLE},
 				{"y", &y, blf::TYPE_DOUBLE},
 				{"z", &z, blf::TYPE_DOUBLE},
 				{"texture", &texture, blf::TYPE_OBJECTREFERENCE, "Texture"}
@@ -335,8 +336,21 @@ void readtest()
     
     for( StateTile* tilePtr : data.get<StateTile>() )
     {
-        std::cout << tilePtr->y << std::endl;
+        std::cout << tilePtr->x << std::endl;
     }
+
+	blf::ObjectDefinition* definition = objects.getDefinitionFromIndex(0);
+	for( int i = 0; i < objects.getSize(); i++, definition = objects.getDefinitionFromIndex(i))
+	{
+		std::cout << definition->identifier << std::endl;
+		for( blf::ObjectAttribute attribute : definition->attributes )
+		{
+			std::cout << "- " << ((attribute.isForeign) ? "[F] " : "") << attribute.name << 
+			((attribute.isActive) ? ": Active!" : "" ) << std::endl;
+			std::cout << "-> " << (int)getTypeSize(attribute.attribType) << std::endl;
+			std::cout << "-> " << attribute.offset << std::endl;
+		}
+	}
 
 	auto t4 = std::chrono::high_resolution_clock::now();
 	auto duration2 = std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3).count();
@@ -364,21 +378,7 @@ int main()
 	std::cout << "begin" << std::endl;
 	writetest();
 	readtest();
-
-	blf::TemplateObject** textures = new blf::TemplateObject*[4];
-	textures[0] = new Texture("grass.png");
-	textures[1] = new Texture("dirt.png");
-	textures[2] = new Texture("crate.png");
-	textures[3] = new Texture("metalblock.png");
-    
-    blf::DataGroup<Texture> testGroup(textures);
-    testGroup.addIndex(1);
-    testGroup.addIndex(2);
-    for(Texture* test : testGroup)
-    {
-        std::cout << test->filePath << std::endl;
-    }
-
+	
 	//for (Tile tile : tiles)
 	{
 		//std::cout << tile.ID << ", " << tile.x << ", " << tile.y << ", " << tile.z << std::endl;

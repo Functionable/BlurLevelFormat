@@ -78,74 +78,52 @@ namespace blf
             }
     };
     
-    /*
-     *  Stores all indices of objects of a certain type inside of a DataTable
-     */
-    class BasicDataGroup
+    template<class T, class Index=int, class IndicesArray=std::vector<Index>>
+    class DataGroup
     {
-        private:
-            TemplateObject** m_dataArray;
-            
-        protected:
-            TemplateObject** getDataArray() const
-            {
-                return m_dataArray;
-            }
-        
         public:
-            BasicDataGroup(TemplateObject** const dataArray)
+            using ValueType         = T*;
+            using IndexType         = Index;
+            using IndicesArrayType  = IndicesArray;
+            using Iterator          = DataGroupIterator<DataGroup<T, Index, IndicesArray>>;
+            
+        private:
+            IndicesArrayType  m_indices;
+            TemplateObject**  m_dataArray;
+
+            IndexType         m_size;
+            
+        public:
+            DataGroup(TemplateObject** const dataArray)
             {
                 m_dataArray = dataArray;
-            }
-            
-            virtual void addIndex(int index);
-            virtual int getSize();
-    };
-    
-    template<class T>
-    class DataGroup : BasicDataGroup
-    {
-        public:
-            using IndexType = int;
-            using ValueType = T*;
-            using IndicesArrayType = std::vector<IndexType>;
-            using Iterator = DataGroupIterator<DataGroup<T>>;
-            
-        private:
-            std::vector<IndexType> m_indices;
-            
-            IndexType m_size;
-            
-        public:
-            DataGroup(TemplateObject** const dataArray) : BasicDataGroup(dataArray)
-            {
                 m_size = 0;
             }
             
-            void addIndex(IndexType index) override
+            void addIndex(IndexType index)
             {
                 m_indices.push_back(index);
                 m_size++;
             }
             
-            IndexType getSize() override
+            IndexType getSize()
             {
                 return m_size;
             }
             
             T* operator[](const IndexType index)
             {
-                return (T*)(getDataArray()[m_indices[index]]);
+                return (T*)(m_dataArray[m_indices[index]]);
             }
             
             Iterator begin() 
             { 
-                return Iterator(0, m_size, m_indices, getDataArray()); 
+                return Iterator(0, m_size, m_indices, m_dataArray); 
             }
             
             Iterator end()
             {
-                return Iterator(m_size, m_size, m_indices, getDataArray());
+                return Iterator(m_size, m_size, m_indices, m_dataArray);
             }
     };
 }

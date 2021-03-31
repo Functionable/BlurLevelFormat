@@ -135,27 +135,7 @@ namespace blf
 							foundMatchingAttribute = true;
 							readAttribute = fileAttribute;
 							readDefinition->attributes[j].isActive = true;
-                            BLF_TYPE nativeAttribType = nativeAttribute.attribType;
-                            BLF_TYPE fileAttribType   = fileAttribute.attribType;
-                            
-                            if( fileAttribType != nativeAttribType )
-                            {
-                                std::cout << "File and native definitions differ, opting to use file's attrib type..." << std::endl;                                
-                                if( getTypeCategory(nativeAttribType) == getTypeCategory(fileAttribType))
-                                {
-                                    nativeAttribute.attribType = fileAttribType;
-                                    if( sizeOfType(fileAttribType) > sizeof(nativeAttribType))
-                                    {
-                                        std::cout << "File definition type is larger than native type! Opting to mark as foreign in order to prevent memory errors" << std::endl;
-                                        nativeAttribute.isForeign = true;
-                                    }
-                                }
-                                else
-                                {
-                                    std::cout << "FATAL: Fatal type mismatch detected! Marking attribute as foreign in order to avoid errors" << std::endl;
-                                    nativeAttribute.isForeign = true;
-                                }
-                            }
+							break;
 						}
 						j++;
 					}
@@ -173,11 +153,28 @@ namespace blf
 					// Activating attribute as both the file and the program have defined it.
 					nativeAttribute.isActive = true;
 
-					if (readAttribute.attribType != nativeAttribute.attribType)
+					BLF_TYPE nativeAttribType = nativeAttribute.attribType;
+					BLF_TYPE readAttribType   = readAttribute.attribType;
+					if (readAttribType != nativeAttribType)
 					{
-						std::cout << "Warning: Differing types for attribute name '"
-							<< nativeAttribute.name << "', might be fatal. Carrying on."
-							<< std::endl;
+						std::cout << "File and native definitions differ, opting to use file's attrib type for: "
+						<< nativeAttribute.name << std::endl;                                
+						if( getTypeCategory(nativeAttribType) == getTypeCategory(readAttribType))
+						{
+							nativeAttribute.attribType = readAttribType;
+							//int sizeDiff = getTypeSize(nativeAttribType) - getTypeSize(readAttribType);
+							//nativeAttribute.offset += sizeDiff;
+							if( getTypeSize(readAttribType) > getTypeSize(nativeAttribType))
+							{
+								std::cout << "File definition type is larger than native type! Opting to mark as foreign in order to prevent memory errors" << std::endl;
+								nativeAttribute.isForeign = true;
+							}
+						}
+						else
+						{
+							std::cout << "FATAL: Fatal type mismatch detected! Marking attribute as foreign in order to avoid errors" << std::endl;
+							nativeAttribute.isForeign = true;
+						}
 					}
 
 					nativeDefinition->attributes[i] = nativeAttribute;
@@ -200,7 +197,7 @@ namespace blf
 			
 			void readAttribute(ObjectAttribute* objectAttribute, int commonTableIndexerSize, void* addr, ForeignAttributeTable* foreignAttributes)
             {
-                int8_t size = sizeOfType(objectAttribute->attribType);
+                int8_t size = getTypeSize(objectAttribute->attribType);
                 if( objectAttribute->isForeign == true ) 
                 { 
                     void* foreignLoc = nullptr;

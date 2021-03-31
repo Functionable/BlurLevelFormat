@@ -2,7 +2,7 @@
 
 namespace blf
 {
-	int8_t sizeOfType(BLF_TYPE type)
+	int8_t getTypeSize(BLF_TYPE type)
 	{
 		switch (type)
 		{

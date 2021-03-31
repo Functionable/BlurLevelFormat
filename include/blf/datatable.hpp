@@ -51,7 +51,6 @@ namespace blf
                 }
                 return group;
             }
-	
 
 			TemplateObject** begin();
 			TemplateObject** end();

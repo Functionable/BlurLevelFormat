@@ -30,9 +30,9 @@ namespace blf
 			{
 				for (int i = 0; i < m_size; i++)
 				{
-				//	delete m_definitions[i];
+					delete m_definitions[i];
 				}
-				//delete[] m_definitions;
+				delete[] m_definitions;
 			}
 
 			size_t getSize() { return m_size; }

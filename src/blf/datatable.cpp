@@ -93,9 +93,6 @@ namespace blf
 
 		m_objectList.clear();
 	}
-
-    //template<typename T, typename = std::enable_if_t<std::is_base_of_v<TemplateObject, T>>>
-    //DataGroup<T> DataTable::get()
  
 	// Remember, these only return positions IN the BUILT ARRAY!
 	TemplateObject** DataTable::begin() { return &m_objectArray[0]; }

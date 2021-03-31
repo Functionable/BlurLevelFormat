@@ -58,7 +58,7 @@ namespace blf
 			// YOU ONLY HAVE TO REMOVE THE ORIGINAL BUFFER YOURSELF.
 			String(const String& string);
 
-			String(std::string& string);
+			String(const std::string& string);
 			String(const char* stringBuffer = "");
 			template<size_t size>
 			String(const char(&stringBuffer)[size]);
