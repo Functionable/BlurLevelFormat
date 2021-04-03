@@ -23,6 +23,9 @@
 #include "blf/objectdefinition.hpp"
 #include "blf/foreignattributetable.hpp"
 
+#include "blf/blffile.hpp"
+
+
 #include "blf/basereadable.hpp"
 #include "blf/basewriteable.hpp"
 #include "blf/dynamicwriteable.hpp"
@@ -30,14 +33,7 @@
 
 #include "blf/datagroup.hpp"
 
-// BLF version info. VERSION 1.0.0
-const int32_t BLFMAJOR = 1;
-const int32_t BLFMINOR = 0;
-const int32_t BLFFIX   = 0;
-
-const char* BLFSIGNATURE = "BLFF";
-const int TEST_TILES = 20;
-
+const int TEST_TILES = 20000;
 const char* BLF_TILE_NAME = "Tile";
 
 // Defining STRDUP as different functions depending on the platform.
@@ -190,44 +186,19 @@ class StateTile : public Tile
 		using Tile::getObjectName;
 };
 
-/**
- * Copies object data to a object definition that can be later managed by blf classes.
- */
-void initializeDefinition(blf::TemplateObject* obj, blf::ObjectDefinition* definition)
-{
-	definition->identifier = obj->getObjectName();
-	definition->templatePointer = obj;
-	definition->attributes = obj->getAttributeMap();
-}
 
-template<typename T, typename = std::enable_if<std::is_base_of<blf::TemplateObject, T>::value>>
-blf::ObjectDefinition createDefinition()
-{
-	blf::ObjectDefinition definition;
-	T object;
-	initializeDefinition(&object, &definition);
-	definition.creator = new blf::SpecialisedTemplateCreator<T>();
-	return definition;
-}
 
 void writetest()
 {
 	// WRITING
 	std::vector<Tile> tiles;
 
-	// Initializing the Information Header.
-	blf::InformationHeader header = {
-		BLFSIGNATURE, BLFMAJOR, BLFMINOR, BLFFIX
-	};
-
-	blf::CommonTable common;
-
 	blf::DataTable data;
 
 	blf::ObjectTable objects = {
-		createDefinition<testObject>(),
-		createDefinition<Texture>(),
-		createDefinition<Tile>(),
+		blf::createDefinition<testObject>(),
+		blf::createDefinition<Texture>(),
+		blf::createDefinition<Tile>(),
 	};
 
 	srand(time(0));
@@ -257,24 +228,9 @@ void writetest()
 		data.addObject(&(tiles[i]));
 	}
 
-	int64_t count = TEST_TILES;
-
 	auto t1 = std::chrono::high_resolution_clock::now();
 
-	blf::Writer writer("level.blf");
-
-	writer.storeObjectTable(&objects);
-	data.computeCommonTable(common, objects);
-	data.buildArray();
-
-	common.buildCommonObjectArray();
-	writer.storeCommonTable(&common);
-    
-	writer.dynamicWrite(&header);
-	writer.writeObjectTable(&objects);
-	writer.writeCommonTable(&common); // ERROR HERE
-    
-    writer.writeDataTable(&data);
+	blf::writeFile("level.blf", objects, data);
     
 	auto t2 = std::chrono::high_resolution_clock::now();
 	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
@@ -282,79 +238,28 @@ void writetest()
 	std::cout << "Write completed in: " << duration << " milliseconds." << std::endl;
 
 	std::cout << "Common objects:" << std::endl;
-	if (common.isArrayBuilt() && common.getArraySize() > 0)
-	{
-		for (blf::TemplateObject* tex : common)
-		{
-			for (blf::ObjectAttribute attrib : tex->getAttributeMap())
-			{
-				std::cout << attrib.name << ": ";
-				switch (attrib.attribType)
-				{
-					case blf::TYPE_STRING:
-						blf::String* string = (blf::String*)attrib.offset;
-						std::cout << *string;
-						break;
-				}
-				std::cout << std::endl;
-			}
-		}
-	}
-	else
-	{
-		std::cout << "none" << std::endl;
-	}
+
 }
 
 
 void readtest()
 {
 	// READING
-
-	// Variables that will be written to.
-	int32_t blurVersion;
-	int64_t blurTileCount = 0;
-	char* blurSignature = new char[4];
-	std::vector<Tile> blurTiles;
-
 	auto t3 = std::chrono::high_resolution_clock::now();
-	blf::Reader levelReader("level.blf");
-	blf::InformationHeader fileInfo = levelReader.dynamicRead<blf::InformationHeader>();
+
+	blf::BLFFile readFile;
+
 	blf::ObjectTable objects = {
-		createDefinition<Texture>(),
-		createDefinition<StateTile>(),
+		blf::createDefinition<Texture>(),
+		blf::createDefinition<StateTile>(),
 	};
 
-	levelReader.readObjectTable(&objects);
-    
-	blf::CommonTable common = levelReader.readCommonTable(&objects);
-    common.buildCommonObjectArray();
-
-	blf::DataTable data;
-	levelReader.readDataTable(&data, &objects, &common);
-    data.buildArray();
-    
-    for( StateTile* tilePtr : data.get<StateTile>() )
-    {
-        std::cout << tilePtr->x << std::endl;
-    }
-
-	blf::ObjectDefinition* definition = objects.getDefinitionFromIndex(0);
-	for( int i = 0; i < objects.getSize(); i++, definition = objects.getDefinitionFromIndex(i))
-	{
-		std::cout << definition->identifier << std::endl;
-		for( blf::ObjectAttribute attribute : definition->attributes )
-		{
-			std::cout << "- " << ((attribute.isForeign) ? "[F] " : "") << attribute.name << 
-			((attribute.isActive) ? ": Active!" : "" ) << std::endl;
-			std::cout << "-> " << (int)getTypeSize(attribute.attribType) << std::endl;
-			std::cout << "-> " << attribute.offset << std::endl;
-		}
-	}
+	blf::readFile("level.blf", readFile, objects);
 
 	auto t4 = std::chrono::high_resolution_clock::now();
 	auto duration2 = std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3).count();
 	std::cout << "Read completed in: " << duration2 << " milliseconds." << std::endl;
+	std::cout << "W" << std::endl;
 }
 
 /*
@@ -364,7 +269,7 @@ void readtest()
 
 	-	Document all the classes * - keep till last
 	-	Move the header defined functions in reader.hpp and writer.hpp into their respective source files.
-	-	Make a function that can simplify this entire process. 
+	-	Make a function that can simplify this entire process. [Y.D]
 
 	-	Create the DataTable class. [Y.D]
 	
@@ -378,10 +283,6 @@ int main()
 	std::cout << "begin" << std::endl;
 	writetest();
 	readtest();
-	
-	//for (Tile tile : tiles)
-	{
-		//std::cout << tile.ID << ", " << tile.x << ", " << tile.y << ", " << tile.z << std::endl;
-	}
+
 	std::cout << "end" << std::endl;
 }

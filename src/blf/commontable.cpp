@@ -133,14 +133,14 @@ namespace blf
 		computeIndexerSize();
 	}
 
-    TemplateObject* CommonTable::operator[](const int index)
+    TemplateObject* CommonTable::operator[](const int index) const
     {
         return m_builtArray[index];
     }
 	
 	// Remember, these only return positions IN the BUILT ARRAY!
-	TemplateObject** CommonTable::begin() { return &m_builtArray[0]; }
+	TemplateObject** CommonTable::begin() const { return &m_builtArray[0]; }
 
 	// Again, remember to build the array or else you're going to have a bad time with segfaults.
-	TemplateObject** CommonTable::end() { return &m_builtArray[m_arraySize]; }
+	TemplateObject** CommonTable::end() const { return &m_builtArray[m_arraySize]; }
 }

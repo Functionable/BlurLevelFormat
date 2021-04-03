@@ -69,6 +69,6 @@ namespace blf
 			// Getter methods for members.
 			size_t  getLength()       { return m_stringSize; }
 			size_t  getBufferLength() { return m_bufferSize; }
-			const char* getBuffer()   { return m_stringBuffer; }
+			const char* getBuffer() const { return m_stringBuffer; }
 	};
 }

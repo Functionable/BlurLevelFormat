@@ -4,6 +4,8 @@
 #include "objectattribute.hpp"
 #include "templatecreator.hpp"
 
+#include "blf/templateobject.hpp"
+
 #include <vector>
 
 namespace blf
@@ -38,4 +40,19 @@ namespace blf
 	};
     
     ObjectAttribute* getObjectAttributeByIdentifier(ObjectDefinition* definition, String identifier);
+
+	/**
+	 * Copies object data to a object definition that can be later managed by blf classes.
+	 */
+	void initializeDefinition(blf::TemplateObject* obj, blf::ObjectDefinition* definition);
+
+	template<typename T, typename = std::enable_if<std::is_base_of<blf::TemplateObject, T>::value>>
+    ObjectDefinition createDefinition()
+	{
+		ObjectDefinition definition;
+		T object;
+		initializeDefinition(&object, &definition);
+		definition.creator = new SpecialisedTemplateCreator<T>();
+		return definition;
+	}
 }

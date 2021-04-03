@@ -12,18 +12,18 @@ namespace blf
 		delete m_writeStream;
 	}
 
-	void Writer::writeCommonTable(CommonTable* table)
+	void Writer::writeCommonTable(const CommonTable& table, const ObjectTable& objects)
 	{
 		// The indexer size goes first.
-		write(table->getIndexerSize());
+		write(table.getIndexerSize());
 
 		// The amount of objects stored is second.
-		write(table->getArraySize());
+		write(table.getArraySize());
 
-		for (TemplateObject* object : (*table))
+		for (CommonTable::ConstIterator it = table.begin(); it != table.end(); it++)
 		{
 			// Writing the object type
-			writeObject(object);
+			writeObject(*it, objects, table);
 		}
 	}
 }

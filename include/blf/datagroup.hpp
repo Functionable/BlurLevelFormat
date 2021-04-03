@@ -34,7 +34,7 @@ namespace blf
             
             DataGroupIterator operator++(int)
             {
-                DataGroup iterator = *this;
+                DataGroupIterator iterator = *this;
                 ++(*this);
                 return iterator;
             }
@@ -47,7 +47,7 @@ namespace blf
             
             DataGroupIterator operator--(int)
             {
-                DataGroup iterator = *this;
+                DataGroupIterator iterator = *this;
                 --(*this);
                 return iterator;
             }

@@ -21,6 +21,14 @@ namespace blf
 		return (void*)location;
 	}
 
+	void* getOffsetFromPointers(const void* base, const void* relativeAttribute)
+	{
+		const unsigned long long int baseInt = (const unsigned long long int)base;
+		const unsigned long long int relativeInt = (const unsigned long long int)relativeAttribute;
+		unsigned long long int location = (relativeInt - baseInt);
+		return (void*)location;
+	}
+
 	// 
 	void* getPointerFromOffset(void* base, void* location)
 	{
@@ -30,6 +38,14 @@ namespace blf
 		 // Converting pointers to integers so we can do arithmetic on them.
 		unsigned long long int baseInt = (unsigned long long int)base;
 		unsigned long long int locationInt = (unsigned long long int)location;
+		unsigned long long int pointer = baseInt + locationInt;
+		return (void*)pointer;
+	}
+
+	void* getPointerFromOffset(const void* base, const void* location)
+	{
+		const unsigned long long int baseInt = (const unsigned long long int)base;
+		const unsigned long long int locationInt = (const unsigned long long int)location;
 		unsigned long long int pointer = baseInt + locationInt;
 		return (void*)pointer;
 	}

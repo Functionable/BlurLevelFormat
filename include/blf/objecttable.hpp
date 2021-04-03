@@ -30,13 +30,13 @@ namespace blf
 			{
 				for (int i = 0; i < m_size; i++)
 				{
-					delete m_definitions[i];
+				//	delete (m_definitions[i]);
 				}
 				delete[] m_definitions;
 			}
 
-			size_t getSize() { return m_size; }
-			uint8_t getIndexerSize() { return m_indexerSize; }
+			size_t getSize() const { return m_size; }
+			uint8_t getIndexerSize() const { return m_indexerSize; }
 
 			// Don't touch these unless you know what you're doing
 			void setIndexerSize(uint8_t indexerSize) { m_indexerSize = indexerSize; }
@@ -81,6 +81,7 @@ namespace blf
 				for (int i = 0; i < oldSize; i++)
 				{
 					(newDefinitions[i]) = (m_definitions[i]);
+					m_definitions[i] = nullptr;
 				}
 
 				ObjectDefinition* defPtr = new ObjectDefinition;
@@ -102,12 +103,12 @@ namespace blf
 				m_definitions[m_size - 1] = defPtr;
 			}
 
-			ObjectDefinition* getDefinitionFromIndex(int index)
+			ObjectDefinition* getDefinitionFromIndex(int index) const
 			{
 				return m_definitions[index];
 			}
 
-			ObjectDefinition* getDefinitionFromIdentifier(blf::String identifier)
+			ObjectDefinition* getDefinitionFromIdentifier(blf::String identifier) const
 			{
 				ObjectDefinition* definition = m_definitions[0];
 				for (int i = 0; i < m_size; i++, definition = m_definitions[i])

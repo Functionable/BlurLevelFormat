@@ -3,6 +3,8 @@
 #include <vector>
 #include <type_traits>
 
+#include "templatearrayconstiterator.hpp"
+
 #include "objecttable.hpp"
 #include "commontable.hpp"
 #include "templateobject.hpp"
@@ -14,13 +16,19 @@ namespace blf
 {
 	class DataTable
 	{
-		std::vector<TemplateObject*> m_objectList;
-		TemplateObject** m_objectArray;
+		public:
+			using IndexType = int;
 
-		int m_arraySize;
-		bool m_isBuilt;
+		private:
+
+			std::vector<TemplateObject*> m_objectList;
+			TemplateObject** m_objectArray;
+
+			IndexType m_arraySize;
+			bool m_isBuilt;
 
 		public:
+			using ConstIterator = TemplateArrayConstIterator;
 
 			void addObject(TemplateObject* object);
 
@@ -29,19 +37,18 @@ namespace blf
 			 *  for referenced objects, and pushes them onto
 			 *  commontable.
 			 */
-			void computeCommonTable(blf::CommonTable& table, blf::ObjectTable& object);
+			void computeCommonTable(blf::CommonTable& table, const blf::ObjectTable& object);
 
-			bool isBuilt();
-            int  getArraySize();
-
-			void buildArray();
+			bool 		isBuilt();
+            IndexType  	getArraySize();
+			void 		buildArray();
             
             template<typename T, typename = std::enable_if_t<std::is_base_of_v<TemplateObject, T>>>
             DataGroup<T> get()
             {
                 DataGroup<T> group(m_objectArray);
                 T controlObject;
-                for( int i = 0; i < m_arraySize; i++)
+                for( IndexType i = 0; i < m_arraySize; i++)
                 {
                     TemplateObject* objPtr = m_objectArray[i];
                     if( strcmp(objPtr->getObjectName(), controlObject.getObjectName()) == 0 )
@@ -52,7 +59,7 @@ namespace blf
                 return group;
             }
 
-			TemplateObject** begin();
-			TemplateObject** end();
+			TemplateObject** begin() 	const;
+			TemplateObject** end() 		const;
 	};
 }

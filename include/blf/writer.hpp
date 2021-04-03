@@ -9,13 +9,15 @@
 #include "templateobject.hpp"
 #include "dynamicwriteable.hpp"
 
+#include "informationheader.hpp"
+
 namespace blf
 {
 	class Writer
 	{
 		std::ofstream* m_writeStream;
-		ObjectTable* m_objectTable;
-		CommonTable* m_commonTable;
+		//ObjectTable* m_objectTable;
+		//CommonTable* m_commonTable;
 
 		public:
 
@@ -35,12 +37,12 @@ namespace blf
 
 			void storeObjectTable(ObjectTable* objectTable)
 			{
-				m_objectTable = objectTable;
+				//m_objectTable = objectTable;
 			}
 
 			void storeCommonTable(CommonTable* commonTable)
 			{
-				m_commonTable = commonTable;
+				//m_commonTable = commonTable;
 			}
 
 			void writeIndexer(uint64_t index, uint8_t size)
@@ -65,17 +67,25 @@ namespace blf
 				}
 			}
 
-			void writeObjectTable(ObjectTable* table)
+			void writeInformationHeader(const InformationHeader& header)
 			{
-				uint8_t indexerSize = table->getIndexerSize();
-				int64_t size = table->getSize();
+				m_writeStream->write(header.signature.getBuffer(), 4);
+				write(header.major);
+				write(header.minor);
+				write(header.fix);
+			}
+
+			void writeObjectTable(const ObjectTable& table)
+			{
+				uint8_t indexerSize = table.getIndexerSize();
+				int64_t size = table.getSize();
 				//m_writeStream->write(reinterpret_cast<char*>(&indexerSize), sizeof(indexerSize));
 				//m_writeStream->write(reinterpret_cast<char*>(&size), sizeof(size));
 				write(indexerSize);
 				write(size);
 				for (int i = 0; i < size; i++)
 				{
-					blf::ObjectDefinition* definition = table->getDefinitionFromIndex(i);
+					blf::ObjectDefinition* definition = table.getDefinitionFromIndex(i);
 					dynamicWrite(&definition->identifier);
 					uint8_t attributeCount = definition->attributes.size();
 					write(attributeCount);
@@ -96,14 +106,14 @@ namespace blf
 			 *
 			 *	You have been warned.
 			 */
-			void writeCommonTable(CommonTable* table);
+			void writeCommonTable(const CommonTable& table, const ObjectTable& objects);
 
-			void writeDataTable(DataTable* dataTable)
+			void writeDataTable(const DataTable& dataTable, const ObjectTable& objects, const CommonTable& common)
 			{
-				for (TemplateObject* object : (*dataTable))
+				for (DataTable::ConstIterator it = dataTable.begin(); it != dataTable.end(); it++)
 				{
 					write((uint8_t)(0xAA));
-					writeObject(object);
+					writeObject(*it, objects, common);
 				}
 				write((uint8_t)255);
 			}
@@ -112,11 +122,10 @@ namespace blf
 			 *	Writes the object to the file, make sure you stored your defined blf::ObjectTable first, using storeObjectTable(blf::ObjectTable).
 			 *	After you've done that, the blf::Writer will manage the rest.
 			 */
-			void writeObject(TemplateObject* obj)
+			void writeObject(const TemplateObject* obj, const ObjectTable& object, const CommonTable& common)
 			{
 				const char* objectName = obj->getObjectName();
-				ObjectDefinition* objectDefinition = m_objectTable->getDefinitionFromIdentifier(obj->getObjectName());
-				
+				ObjectDefinition* objectDefinition = object.getDefinitionFromIdentifier(obj->getObjectName());
 				// Writing the identifier to the file.
 				dynamicWrite(&objectName);
 
@@ -141,7 +150,7 @@ namespace blf
                         else if(objectAttribute->attribType == TYPE_OBJECTREFERENCE)
                         {
 								TemplateObject* object = (TemplateObject*)location;
-								writeIndexer(object->commonTableIndex, m_commonTable->getIndexerSize());
+								writeIndexer(object->commonTableIndex, common.getIndexerSize());
 						}
 					}
 				}

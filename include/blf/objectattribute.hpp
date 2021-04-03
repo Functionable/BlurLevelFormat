@@ -44,10 +44,12 @@ namespace blf
 	 *  @param relativeAttribute The pointer to the class property. The offset of this to the class pointer will be found.
 								 Used in the attribute system for BLF objects.
 	 */
-	void* getOffsetFromPointers(void* base, void* relativeAttribute);
+	void* getOffsetFromPointers(	  void* base, 		void* 	relativeAttribute);
+	void* getOffsetFromPointers(const void* base, const void* 	relativeAttribute);
 
 	/**
 	 *	Does the reverse of @ref getAttributeLocation(void*, void*), which means it takes in an offset and gives you a pointer.
 	 */
-	void* getPointerFromOffset(void* base, void* location);
+	void* getPointerFromOffset(		 void* 	base, 		void* 	location);
+	void* getPointerFromOffset(const void* 	base, const void* 	location);
 }

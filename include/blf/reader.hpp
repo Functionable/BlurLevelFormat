@@ -65,20 +65,20 @@ namespace blf
 				}
 			}
 			
-			void readDataTable(DataTable* dataTable, ObjectTable* objectTable, CommonTable* commonTable)
+			void readDataTable(DataTable* dataTable, const ObjectTable& objectTable, const CommonTable& commonTable)
             {      
                 uint8_t byte = read<uint8_t>();
                 while( byte == 0xAA )
                 {
-                    dataTable->addObject(readObject(objectTable, commonTable->getIndexerSize()));
+                    dataTable->addObject(readObject(objectTable, commonTable.getIndexerSize()));
                     byte = read<uint8_t>();
                 }
             }
 
-			ObjectTable* readObjectTable(ObjectTable* definedTable)
+			void readObjectTable(ObjectTable& definedTable)
 			{
 				std::vector<ObjectDefinition> definitions;
-				definedTable->setIndexerSize(read<uint8_t>());
+				definedTable.setIndexerSize(read<uint8_t>());
 				size_t size = read<int64_t>();
 				for (int i = 0; i < size; i++)
 				{
@@ -99,7 +99,7 @@ namespace blf
 				for (int i = 0; i < definitions.size(); i++)
 				{
 					ObjectDefinition readDefinition = definitions[i];
-					ObjectDefinition* nativeDefinition = definedTable->getDefinitionFromIdentifier(readDefinition.identifier);
+					ObjectDefinition* nativeDefinition = definedTable.getDefinitionFromIdentifier(readDefinition.identifier);
 					
 					if (nativeDefinition == nullptr)
 					{
@@ -110,14 +110,12 @@ namespace blf
 							attribute.isActive = true;
 							attribute.isForeign = true;
 						}
-						definedTable->insertDefinition(readDefinition);
+						definedTable.insertDefinition(readDefinition);
 						continue;
 					}
 
 					this->processDefinitionAttributes(nativeDefinition, &definitions[i]);
 				}
-
-				return definedTable;
 			}
 
 			void processDefinitionAttributes(ObjectDefinition* nativeDefinition, ObjectDefinition* readDefinition)
@@ -242,12 +240,12 @@ namespace blf
                 }
             }
 
-			TemplateObject* readObject(ObjectTable* objectTable, uint8_t commonTableIndexerSize)
+			TemplateObject* readObject(const ObjectTable& objectTable, uint8_t commonTableIndexerSize)
 			{
 				// Reading the name of the object (used as a reference to the object table)
 				const char* objectName = dynamicRead<const char*>();
 
-				ObjectDefinition* objectDefinition = objectTable->getDefinitionFromIdentifier(objectName);
+				ObjectDefinition* objectDefinition = objectTable.getDefinitionFromIdentifier(objectName);
 				
 				if (objectDefinition == nullptr)
 				{
@@ -275,7 +273,7 @@ namespace blf
 				return obj;
 			}
 
-			CommonTable readCommonTable(ObjectTable* objectTable)
+			CommonTable readCommonTable(const ObjectTable& objectTable)
 			{
 				CommonTable table;
 
