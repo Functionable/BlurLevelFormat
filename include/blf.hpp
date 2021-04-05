@@ -3,30 +3,28 @@
  *  This header loads all classes required to use BLF.
  */
 
-#include "enums.hpp"
-#include "version.hpp"
-#include "blffile.hpp"
-#include "string.hpp"
+#include "blf/enums.hpp"
+#include "blf/blffile.hpp"
+#include "blf/string.hpp"
 
-#include "templatearrayconstiterator.hpp"
-#include "templatecreator.hpp"
-#include "templateobject.hpp"
+#include "blf/templatearrayconstiterator.hpp"
+#include "blf/templatecreator.hpp"
+#include "blf/templateobject.hpp"
 
-#include "writer.hpp"
-#include "reader.hpp"
+#include "blf/writer.hpp"
+#include "blf/reader.hpp"
 
-#include "basereadable.hpp"
-#include "basewriteable.hpp"
-#include "dynamicreadable.hpp"
-#include "dynamicwriteable.hpp"
+#include "blf/basereadable.hpp"
+#include "blf/basewriteable.hpp"
+#include "blf/dynamicreadable.hpp"
+#include "blf/dynamicwriteable.hpp"
 
-#include "informationheader.hpp"
-#include "commontable.hpp"
-#include "objecttable.hpp"
-#include "datagroup.hpp"
-#include "datatable.hpp"
+#include "blf/informationheader.hpp"
+#include "blf/commontable.hpp"
+#include "blf/objecttable.hpp"
+#include "blf/datagroup.hpp"
+#include "blf/datatable.hpp"
 
-#include "objectdefinition.hpp"
-#include "objectattribute.hpp"
-#include "definitioncreator.hpp"
-
+#include "blf/objectdefinition.hpp"
+#include "blf/objectattribute.hpp"
+#include "blf/definitioncreator.hpp"
