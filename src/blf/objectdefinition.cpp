@@ -1,5 +1,6 @@
 #include "blf/objectdefinition.hpp"
 
+
 #include <iostream>
 
 namespace blf
@@ -18,4 +19,13 @@ namespace blf
         std::cout << "Warning! Attribute '" << identifier << "' could not be found!" << std::endl;
         return nullptr;
     }
+
+    void initializeDefinition(blf::TemplateObject* obj, blf::ObjectDefinition* definition)
+	{
+		definition->identifier = obj->getObjectName();
+		definition->templatePointer = obj;
+		definition->attributes = obj->getAttributeMap();
+	}
+
+
 }

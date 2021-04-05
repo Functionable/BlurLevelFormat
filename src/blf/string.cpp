@@ -71,7 +71,7 @@ namespace blf
 		copyCString(string);
 	}
 
-	String::String(std::string& string)
+	String::String(const std::string& string)
 	{
 		// Setting sizes for fast lookup times.
 		m_bufferSize = string.length() + 1;

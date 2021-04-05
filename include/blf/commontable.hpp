@@ -6,6 +6,8 @@
 
 #include "templateobject.hpp"
 
+#include "templatearrayconstiterator.hpp"
+
 namespace blf
 {
 	/**
@@ -34,23 +36,24 @@ namespace blf
 		void computeIndexerSize();
 
 		public:
-
 			~CommonTable();
+
+			using ConstIterator = TemplateArrayConstIterator;
 
 			/**
 			 *	The size in bytes, of the indexer that will be used to reference objects inside of this table.
 			 */
-			uint8_t getIndexerSize() { return m_indexerSize; }
+			uint8_t getIndexerSize() const { return m_indexerSize; }
 
 			/**
 			 *	Returns whether or not the CommonTable has a usable array of objects already built.
 			 */
-			bool isArrayBuilt() { return m_isArrayBuilt; }
+			bool isArrayBuilt() const { return m_isArrayBuilt; }
 
 			/**
 			 *	The size of the internal array.
 			 */
-			uint64_t getArraySize() { return m_arraySize; }
+			uint64_t getArraySize() const { return m_arraySize; }
 
 			/**
 			 *	Deallocates m_builtArray, used in the destructor, and sets m_isBuilt to false.
@@ -85,12 +88,14 @@ namespace blf
 			 *  misuse will cause the filesize to increase greatly due to how BLF references work.
 			 */
 			void forceListAsArray(std::vector<TemplateObject*>* list);
+            
+            TemplateObject* operator[](const int index) const;
 
 			/* These are to support foreach loops in c++ */
 			/* Note: These functions WILL pull from the array, not the internal list. */
 			/* if you want control over the list, you can build from an external list. */
 			/* Make sure that the array is built before using these! */
-			TemplateObject** begin();
-			TemplateObject** end();
+			TemplateObject** begin() const;
+			TemplateObject** end() const;
 	};
 }

@@ -1,9 +1,10 @@
 #include "blf/datatable.hpp"
 
 #include <map>
-#include <algorithm>
+#include <cstring>
 #include <iterator>
 #include <iostream>
+#include <algorithm>
 
 namespace blf
 {
@@ -15,7 +16,7 @@ namespace blf
 		m_objectList.push_back(object);
 	}
 
-	void DataTable::computeCommonTable(blf::CommonTable& table, blf::ObjectTable& objectTable)
+	void DataTable::computeCommonTable(blf::CommonTable& table, const blf::ObjectTable& objectTable)
 	{
 		// Holds the amount of times a pointer is referenced.
 		std::map<TemplateObject*, int> referencedPointers;
@@ -49,22 +50,15 @@ namespace blf
 			}
 		}
 		
-		std::cout << "Pointer tables built" << std::endl;
-
 		int index = 0;
-        std::cout<< referencedPointers.size() << std::endl;
 		for (auto& pair : referencedPointers)
 		{
-            std::cout << pair.first << std::endl;
 			// If the reference count is above the treshold.
 			if (pair.second > COMMONTABLE_THRESHOLD)
 			{
-                //std::cout << index << std::endl;
 				//pointerIndexes.insert({ pair.first, index });
 				table.addCommonObject((TemplateObject*)pair.first);
-				
-                //std::cout << "Added" << std::endl;
-                
+				                
 				// Removing all of the occurences of the common object from the data table.
 				m_objectList.erase(std::remove(m_objectList.begin(), m_objectList.end(), pair.first), m_objectList.end());
 
@@ -99,10 +93,10 @@ namespace blf
 
 		m_objectList.clear();
 	}
-
+ 
 	// Remember, these only return positions IN the BUILT ARRAY!
-	TemplateObject** DataTable::begin() { return &m_objectArray[0]; }
+	TemplateObject** DataTable::begin() const { return &m_objectArray[0]; }
 
 	// Again, remember to build the array or else you're going to have a bad time with segfaults.
-	TemplateObject** DataTable::end() { return &m_objectArray[m_arraySize]; }
+	TemplateObject** DataTable::end() const { return &m_objectArray[m_arraySize]; }
 }

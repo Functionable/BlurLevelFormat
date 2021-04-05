@@ -49,45 +49,36 @@ namespace blf
 
 			uint64_t readIndexer(uint8_t size)
 			{
-                
-                std::cout << "gonna read" << std::endl;
 				switch (size)
 				{
-                    
 					case 1:
-                        std::cout << "read one so far" << std::endl;
 						return read<uint8_t>();
 
 					case 2:
-                        std::cout << "read two so far" << std::endl;
 						return read<uint16_t>();
 
 					case 4:
-                        std::cout << "read four so far" << std::endl;
 						return read<uint32_t>();
 
 					case 8:
-                        std::cout << "read eight so far" << std::endl;
 						return read<uint64_t>();
 				}
 			}
 			
-			void readDataTable(DataTable* dataTable, ObjectTable* objectTable, CommonTable* commonTable)
+			void readDataTable(DataTable* dataTable, const ObjectTable& objectTable, const CommonTable& commonTable)
             {      
                 uint8_t byte = read<uint8_t>();
                 while( byte == 0xAA )
                 {
-                    std::cout << "BB" << (int)byte << std::endl;
-                    dataTable->addObject(readObject(objectTable, commonTable->getIndexerSize()));
+                    dataTable->addObject(readObject(objectTable, commonTable.getIndexerSize()));
                     byte = read<uint8_t>();
-                    std::cout << "AA" << (int)byte << std::endl;
                 }
             }
 
-			ObjectTable* readObjectTable(ObjectTable* definedTable)
+			void readObjectTable(ObjectTable& definedTable)
 			{
 				std::vector<ObjectDefinition> definitions;
-				definedTable->setIndexerSize(read<uint8_t>());
+				definedTable.setIndexerSize(read<uint8_t>());
 				size_t size = read<int64_t>();
 				for (int i = 0; i < size; i++)
 				{
@@ -108,7 +99,7 @@ namespace blf
 				for (int i = 0; i < definitions.size(); i++)
 				{
 					ObjectDefinition readDefinition = definitions[i];
-					ObjectDefinition* nativeDefinition = definedTable->getDefinitionFromIdentifier(readDefinition.identifier);
+					ObjectDefinition* nativeDefinition = definedTable.getDefinitionFromIdentifier(readDefinition.identifier);
 					
 					if (nativeDefinition == nullptr)
 					{
@@ -119,14 +110,12 @@ namespace blf
 							attribute.isActive = true;
 							attribute.isForeign = true;
 						}
-						definedTable->insertDefinition(readDefinition);
+						definedTable.insertDefinition(readDefinition);
 						continue;
 					}
 
 					this->processDefinitionAttributes(nativeDefinition, &definitions[i]);
 				}
-
-				return definedTable;
 			}
 
 			void processDefinitionAttributes(ObjectDefinition* nativeDefinition, ObjectDefinition* readDefinition)
@@ -144,8 +133,8 @@ namespace blf
 							foundMatchingAttribute = true;
 							readAttribute = fileAttribute;
 							readDefinition->attributes[j].isActive = true;
+							break;
 						}
-						readDefinition->attributes[j].isForeign = !readDefinition->attributes[j].isActive;
 						j++;
 					}
 
@@ -162,11 +151,28 @@ namespace blf
 					// Activating attribute as both the file and the program have defined it.
 					nativeAttribute.isActive = true;
 
-					if (readAttribute.attribType != nativeAttribute.attribType)
+					BLF_TYPE nativeAttribType = nativeAttribute.attribType;
+					BLF_TYPE readAttribType   = readAttribute.attribType;
+					if (readAttribType != nativeAttribType)
 					{
-						std::cout << "Warning: Differing types for attribute name '"
-							<< nativeAttribute.name << "', might be fatal. Carrying on."
-							<< std::endl;
+						std::cout << "File and native definitions differ, opting to use file's attrib type for: "
+						<< nativeAttribute.name << std::endl;                                
+						if( getTypeCategory(nativeAttribType) == getTypeCategory(readAttribType))
+						{
+							nativeAttribute.attribType = readAttribType;
+							//int sizeDiff = getTypeSize(nativeAttribType) - getTypeSize(readAttribType);
+							//nativeAttribute.offset += sizeDiff;
+							if( getTypeSize(readAttribType) > getTypeSize(nativeAttribType))
+							{
+								std::cout << "File definition type is larger than native type! Opting to mark as foreign in order to prevent memory errors" << std::endl;
+								nativeAttribute.isForeign = true;
+							}
+						}
+						else
+						{
+							std::cout << "FATAL: Fatal type mismatch detected! Marking attribute as foreign in order to avoid errors" << std::endl;
+							nativeAttribute.isForeign = true;
+						}
 					}
 
 					nativeDefinition->attributes[i] = nativeAttribute;
@@ -180,15 +186,66 @@ namespace blf
                         attrib.isForeign = true;
                         nativeDefinition->attributes.push_back(attrib);
                     }
+                    else
+                    {
+                        nativeDefinition->activeAttributeCount++;
+                    }
 				}
 			}
+			
+			void readAttribute(ObjectAttribute* objectAttribute, int commonTableIndexerSize, void* addr, ForeignAttributeTable* foreignAttributes)
+            {
+                int8_t size = getTypeSize(objectAttribute->attribType);
+                if( objectAttribute->isForeign == true ) 
+                { 
+                    void* foreignLoc = nullptr;
+                    if (size != SIZE_DYNAMIC)
+                    {
+                        foreignLoc = new char[size];
+                        readStream->read((char*)foreignLoc, size);
+                    }
+                    else
+                    {
+                        if (objectAttribute->attribType == TYPE_STRING)
+                        {
+                            foreignLoc = new char[sizeof(String)];
+                            *((String*)foreignLoc) = dynamicRead<String>();
+                        }							
+                        else if(objectAttribute->attribType == TYPE_OBJECTREFERENCE)
+                        {
+                            int commonTableReference = readIndexer(commonTableIndexerSize);
+                            foreignLoc = new char[sizeof(commonTableReference)];
+                            *((int*)foreignLoc) = commonTableReference;
+                        }
+                    }
+                    foreignAttributes->attributes.push_back({objectAttribute->name, foreignLoc, objectAttribute->attribType, objectAttribute->referencedType});
+                    return; 
+                }
+                if (size != SIZE_DYNAMIC)
+                {
+                    readStream->read((char*)addr, size);
+                }
+                else
+                {
+                    if (objectAttribute->attribType == TYPE_STRING)
+                    {
+                        String str = dynamicRead<String>();
+                        (*(blf::String*)addr) = str;
+                    }							
+                    else if(objectAttribute->attribType == TYPE_OBJECTREFERENCE)
+                    {
+                        int commonTableReference = readIndexer(commonTableIndexerSize);
+                        *((int*)addr) = commonTableReference;
+                    }
+                }
+            }
 
-			TemplateObject* readObject(ObjectTable* objectTable, uint8_t commonTableIndexerSize)
+			TemplateObject* readObject(const ObjectTable& objectTable, uint8_t commonTableIndexerSize)
 			{
 				// Reading the name of the object (used as a reference to the object table)
 				const char* objectName = dynamicRead<const char*>();
 
-				ObjectDefinition* objectDefinition = objectTable->getDefinitionFromIdentifier(objectName);
+				ObjectDefinition* objectDefinition = objectTable.getDefinitionFromIdentifier(objectName);
 				
 				if (objectDefinition == nullptr)
 				{
@@ -202,71 +259,27 @@ namespace blf
 				ForeignAttributeTable foreignAttributes;
 
 				TemplateObject* obj = objectDefinition->creator->createNew();
-				
-				std::cout << "Reading object of type '" << objectName << "'" << std::endl;
 
-				for (int i = 0; i < objectDefinition->attributes.size(); i++)
+				for (int i = 0; i < objectDefinition->activeAttributeCount; i++)
 				{
                     blf::String attributeName = dynamicRead<blf::String>();
 					ObjectAttribute* objectAttribute = getObjectAttributeByIdentifier(objectDefinition, attributeName);
-                    int8_t size = sizeOfType(objectAttribute->attribType);
-                    std::cout << attributeName << "!IDK" << objectAttribute->name << std::endl;
-                    std::cout << "is foreign? " << objectAttribute->isForeign << std::endl;
-                    if( objectAttribute->isForeign ) 
-                    { 
-                        std::cout << attributeName << "IDK" << std::endl;
-                        if (size != -1)
-                        {
-                            char* test = new char[size];
-                            readStream->read(test, size);
-                            delete[] test;
-                        }
-                        else
-                        {
-                            if (objectAttribute->attribType == TYPE_STRING)
-                            {
-                                String str = dynamicRead<String>();
-                            }							
-                            else if(objectAttribute->attribType == TYPE_OBJECTREFERENCE)
-                            {
-                                int commonTableReference = readIndexer(commonTableIndexerSize);
-                                std::cout << "thing " << commonTableReference << std::endl;
-                            }
-                        }
-                        continue; 
-                    }
-					void* offset = getOffsetFromPointers(objectDefinition->templatePointer, objectAttribute->offset);
-					void* location = getPointerFromOffset(obj, offset);
-					if (size != -1)
-					{
-						readStream->read((char*)location, size);
-					}
-					else
-					{
-						if (objectAttribute->attribType == TYPE_STRING)
-						{
-							String str = dynamicRead<String>();
-							(*(blf::String*)location) = str;
-						}							
-						else if(objectAttribute->attribType == TYPE_OBJECTREFERENCE)
-						{
-							int commonTableReference = readIndexer(commonTableIndexerSize);
-                            std::cout << "thing " << commonTableReference << std::endl;
-						}
-					}
-				}
+                    
+                    void* offset = getOffsetFromPointers(objectDefinition->templatePointer, objectAttribute->offset);
+                    void* location = getPointerFromOffset(obj, offset);
+                    
+                    readAttribute(objectAttribute, commonTableIndexerSize, location, &foreignAttributes);
+                }
 				return obj;
 			}
 
-			CommonTable readCommonTable(ObjectTable* objectTable)
+			CommonTable readCommonTable(const ObjectTable& objectTable)
 			{
 				CommonTable table;
 
 				uint8_t indexerSize = read<uint8_t>();
 
 				uint64_t tableSize = read<uint64_t>();
-
-				std::cout << "Reading Common Table of Size: " << tableSize << std::endl;
 
 				for (int i = 0; i < tableSize; i++)
 				{
