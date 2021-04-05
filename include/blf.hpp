@@ -28,3 +28,5 @@
 #include "blf/objectdefinition.hpp"
 #include "blf/objectattribute.hpp"
 #include "blf/definitioncreator.hpp"
+
+#include "blf/version.hpp"
