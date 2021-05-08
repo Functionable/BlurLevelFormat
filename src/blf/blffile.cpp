@@ -100,16 +100,16 @@ namespace blf
         file.data = data;
 
 
-        /*blf::ObjectDefinition* definition = file.objects.getDefinitionFromIndex(0);
-        for( int i = 0; i < file.objects.getSize(); i++, definition = file.objects.getDefinitionFromIndex(i))
+        blf::ObjectDefinition* definition = file.objects.getDefinitionFromIndex(0);
+        /*for( int i = 0; i < file.objects.getSize(); i++, definition = file.objects.getDefinitionFromIndex(i))
         {
-            std::cout << definition->identifier << std::endl;
+            std::cout << ((definition->isForeign) ? "[F] " : "") << definition->identifier << std::endl;
             for( blf::ObjectAttribute attribute : definition->attributes )
             {
-                std::cout << "- " << ((attribute.isForeign) ? "[F] " : "") << attribute.name << 
+                std::cout << "- " << ((attribute.isForeign | definition->isForeign) ? "[F] " : "") << attribute.name << 
                 ((attribute.isActive) ? ": Active!" : "" ) << std::endl;
                 std::cout << "-> " << (int)getTypeSize(attribute.attribType) << std::endl;
-                std::cout << "-> " << attribute.offset << std::endl;
+                std::cout << "-> " << (unsigned long long)attribute.offset << std::endl;
             }
         }*/
 

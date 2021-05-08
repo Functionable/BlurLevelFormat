@@ -25,13 +25,14 @@ namespace blf
 		std::map<TemplateObject*, uint64_t> pointerIndexes;
 
 		TemplateObject* object = m_objectList[0];
-		for (int i = 0; i < m_objectList.size(); i++, object = m_objectList[i])
+		for (int i = 0; i < m_objectList.size(); i++)
 		{
+			object = m_objectList[i];
 			ObjectDefinition* objectDefinition = objectTable.getDefinitionFromIdentifier(object->getObjectName());
 			ObjectAttribute* attribute = &(objectDefinition->attributes[0]);
-			for (int j = 0; j < objectDefinition->attributes.size(); j++,
-				attribute = &(objectDefinition->attributes[j]))
+			for (int j = 0; j < objectDefinition->attributes.size(); j++)
 			{
+				attribute = &(objectDefinition->attributes[j]);
 				if (attribute->attribType == TYPE_OBJECTREFERENCE)
 				{
 					void* offset = getOffsetFromPointers(objectDefinition->templatePointer, attribute->offset);

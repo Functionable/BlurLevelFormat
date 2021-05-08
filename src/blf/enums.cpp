@@ -1,5 +1,7 @@
 #include "blf/enums.hpp"
 
+#include "blf/string.hpp"
+
 namespace blf
 {
 	int8_t getTypeSize(BLF_TYPE type)
@@ -27,6 +29,37 @@ namespace blf
 			case TYPE_OBJECTREFERENCE:
 				// The size of this is decided by the size of the common table indexer.
 				return SIZE_DYNAMIC;
+
+			case TYPE_LONG:
+				return 8;
+		}
+	}
+
+	uint8_t getAbsoluteTypeSize(BLF_TYPE type)
+	{
+		switch (type)
+		{
+			case TYPE_NULL:
+				return 0;
+
+			case TYPE_INT:
+				return 4;
+
+			case TYPE_FLOAT:
+				return 4;
+
+			case TYPE_BOOL:
+				return 1;
+
+			case TYPE_DOUBLE:
+				return 8;
+
+			case TYPE_STRING:
+				return sizeof(String);
+
+			case TYPE_OBJECTREFERENCE:
+				// The size of this is decided by the size of the common table indexer.
+				return 8;
 
 			case TYPE_LONG:
 				return 8;

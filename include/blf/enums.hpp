@@ -37,5 +37,7 @@ namespace blf
 	const int SIZE_DYNAMIC = -1;
 
 	int8_t 				getTypeSize(BLF_TYPE type);
+	uint8_t				getAbsoluteTypeSize(BLF_TYPE type);
+	
     BLF_TYPECATEGORY 	getTypeCategory(BLF_TYPE type);
 }

@@ -9,6 +9,7 @@ namespace blf
 
 	Writer::~Writer()
 	{
+		m_writeStream->close();
 		delete m_writeStream;
 	}
 

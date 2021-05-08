@@ -6,7 +6,7 @@
 namespace blf
 {
 	void String::setupCString(const char* string, size_t bufferSize)
-	{
+	{	
 		// Assigning the char buffer, hopefully doesn't blow up.
 		m_stringBuffer = (char*)string;
 
@@ -22,8 +22,14 @@ namespace blf
 		m_bufferSize = otherString.m_bufferSize;
 
 		// Copying the buffer.
-		this->m_stringBuffer = new char[otherString.m_bufferSize];
+		m_stringBuffer = new char[m_bufferSize];
+
 		memcpy(m_stringBuffer, otherString.m_stringBuffer, m_bufferSize);
+		/*for( int i = 0; i < m_stringSize; i++ )
+		{
+			m_stringBuffer[i] = 'a';
+		}*/
+		m_stringBuffer[m_stringSize] = '\0';
 
 		// Since we duplicated the string buffer, we have to delete.
 		m_shouldDelete = true;
@@ -43,6 +49,7 @@ namespace blf
 
 	bool String::operator==(const String& otherString)
 	{
+		//bool isNullptr = otherString == nullptr;
 		if (otherString.m_stringSize != this->m_stringSize)
 		{
 			return false;
@@ -66,6 +73,14 @@ namespace blf
 
 	// CONSTRUCTOR METHODS.
 
+	String::String()
+	{
+		m_stringBuffer = nullptr;
+		m_shouldDelete = false;
+		m_bufferSize = 0;
+		m_stringSize = 0;
+	}
+
 	String::String(const String& string)
 	{
 		copyCString(string);
@@ -84,9 +99,10 @@ namespace blf
 
 		// Copying text to the buffer.
 		memcpy((char*)m_stringBuffer, string.c_str(), m_stringSize);
+		m_stringBuffer[m_stringSize] = '\0';
 
 		// Adding a null terminator.
-		m_stringBuffer[m_stringSize] = '\0';
+		//m_stringBuffer[m_stringSize] = '\0';
 
 		// Marking it for deletion when this object's lifetime runs out.
 		// Because we allocated a new char buffer.
@@ -125,7 +141,8 @@ namespace blf
 		if (m_shouldDelete)
 		{
 			// Cleaning up the string's own mess.
-			delete m_stringBuffer;
+			delete[] m_stringBuffer;
+			m_deleted = true;
 		}
 	}
 }
