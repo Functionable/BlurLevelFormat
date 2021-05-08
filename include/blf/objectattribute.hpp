@@ -3,6 +3,8 @@
 #include "enums.hpp"
 #include "string.hpp"
 
+#include <iostream>
+
 namespace blf
 {
 	struct ObjectAttribute
@@ -27,11 +29,6 @@ namespace blf
 		 *	and only in the file's object table.
 		 */
 		bool isForeign = false;
-	};
-
-	struct ForeignAttribute : public ObjectAttribute 
-	{
-		bool shouldRemove = false;
 	};
 
 	/**

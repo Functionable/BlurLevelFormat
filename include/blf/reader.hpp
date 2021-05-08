@@ -4,6 +4,7 @@
 #include "datatable.hpp"
 #include "objecttable.hpp"
 #include "dynamicreadable.hpp"
+#include "foreignobject.hpp"
 #include "templateobject.hpp"
 #include "commontable.hpp"
 
@@ -109,6 +110,7 @@ namespace blf
 						{
 							attribute.isActive = true;
 							attribute.isForeign = true;
+							readDefinition.activeAttributeCount++;
 						}
 						definedTable.insertDefinition(readDefinition);
 						continue;
@@ -218,26 +220,27 @@ namespace blf
                             *((int*)foreignLoc) = commonTableReference;
                         }
                     }
-                    foreignAttributes->attributes.push_back({objectAttribute->name, foreignLoc, objectAttribute->attribType, objectAttribute->referencedType});
+                    foreignAttributes->addDefinition({objectAttribute->name, foreignLoc, objectAttribute->attribType, objectAttribute->referencedType});
                     return; 
                 }
-                if (size != SIZE_DYNAMIC)
-                {
-                    readStream->read((char*)addr, size);
-                }
-                else
-                {
-                    if (objectAttribute->attribType == TYPE_STRING)
-                    {
-                        String str = dynamicRead<String>();
-                        (*(blf::String*)addr) = str;
-                    }							
-                    else if(objectAttribute->attribType == TYPE_OBJECTREFERENCE)
-                    {
-                        int commonTableReference = readIndexer(commonTableIndexerSize);
-                        *((int*)addr) = commonTableReference;
-                    }
-                }
+				if (size != SIZE_DYNAMIC)
+				{
+					readStream->read((char*)addr, size);
+				}
+				else
+				{
+					if (objectAttribute->attribType == TYPE_STRING)
+					{
+						String str = dynamicRead<String>();
+							
+						(*(blf::String*)addr) = str;
+					}
+					else if (objectAttribute->attribType == TYPE_OBJECTREFERENCE)
+					{
+						int commonTableReference = readIndexer(commonTableIndexerSize);
+						*((int*)addr) = commonTableReference;
+					}
+				}
             }
 
 			TemplateObject* readObject(const ObjectTable& objectTable, uint8_t commonTableIndexerSize)
@@ -245,8 +248,8 @@ namespace blf
 				// Reading the name of the object (used as a reference to the object table)
 				const char* objectName = dynamicRead<const char*>();
 
-				ObjectDefinition* objectDefinition = objectTable.getDefinitionFromIdentifier(objectName);
-				
+				ObjectDefinition* objectDefinition = objectTable.getDefinitionFromIdentifier(objectName);	
+
 				if (objectDefinition == nullptr)
 				{
 					//	return nullptr;
@@ -258,7 +261,7 @@ namespace blf
 
 				ForeignAttributeTable foreignAttributes;
 
-				TemplateObject* obj = objectDefinition->creator->createNew();
+				TemplateObject* obj = (foreign) ? new ForeignObject(objectName, objectDefinition->attributes) : objectDefinition->creator->createNew();
 
 				for (int i = 0; i < objectDefinition->activeAttributeCount; i++)
 				{
@@ -266,10 +269,13 @@ namespace blf
 					ObjectAttribute* objectAttribute = getObjectAttributeByIdentifier(objectDefinition, attributeName);
                     
                     void* offset = getOffsetFromPointers(objectDefinition->templatePointer, objectAttribute->offset);
-                    void* location = getPointerFromOffset(obj, offset);
+                    void* location = getPointerFromOffset(obj->dataPtr(), offset);
                     
                     readAttribute(objectAttribute, commonTableIndexerSize, location, &foreignAttributes);
                 }
+
+				obj->storeForeignAttributes(foreignAttributes);
+
 				return obj;
 			}
 

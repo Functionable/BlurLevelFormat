@@ -13,6 +13,10 @@ namespace blf
 			ForeignAttributeTable m_foreignAttributes;
 
 		public:
+			virtual ~TemplateObject() {};
+		
+			virtual void* dataPtr() const { return (void*)this; };
+
 			uint64_t commonTableIndex = 0;
 
 			virtual const char* getObjectName() const = 0;

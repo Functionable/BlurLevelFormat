@@ -33,6 +33,7 @@ namespace blf
 		// Will delete the buffer once the String is deleted.
 		// Not meant for use with predefined buffers, only ones that String made.
 		bool m_shouldDelete = false;
+		bool m_deleted = false;
 
 		// TODO: OVERLOAD OPERATORS.
 
@@ -53,13 +54,15 @@ namespace blf
 			operator const char*() { return getBuffer(); }
 			explicit operator std::string() { return std::string(getBuffer(), getLength()); }
 
+			String();
+
 			// PLEASE NOTE, THE COPY CONSTRUCTOR ALSO CREATES
 			// ITS OWN COPY OF THE STRING'S INTERNAL BUFFER.
 			// YOU ONLY HAVE TO REMOVE THE ORIGINAL BUFFER YOURSELF.
 			String(const String& string);
 
 			String(const std::string& string);
-			String(const char* stringBuffer = "");
+			String(const char* stringBuffer);
 			template<size_t size>
 			String(const char(&stringBuffer)[size]);
 			String(const char* stringBuffer, size_t bufferLength);

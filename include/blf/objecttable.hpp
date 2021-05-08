@@ -13,26 +13,55 @@ namespace blf
 	class ObjectTable
 	{
 		uint8_t m_indexerSize;
-		size_t m_size;
+		size_t m_size = 0;
 		ObjectDefinition** m_definitions;
 		bool m_empty = true;
+
+		void copyFromTable(const ObjectTable& otherTable)
+		{
+			m_indexerSize	= otherTable.m_indexerSize;
+			m_empty			= otherTable.m_empty;
+			m_size			= otherTable.m_size;
+			m_definitions	= new ObjectDefinition * [m_size];
+
+			for (int i = 0; i < m_size; i++)
+			{
+				m_definitions[i] = new ObjectDefinition();
+				(*m_definitions[i]) = (*otherTable.m_definitions[i]);
+			}
+		};
 
 		public:
 
 			ObjectTable() {}
+
+			// COPY CONSTRUCTOR, COPY CONSTRUCTOR, NEEDED, IT IS.
+			ObjectTable(const ObjectTable& table)
+			{
+				copyFromTable(table);
+			}
 
 			ObjectTable(std::initializer_list<ObjectDefinition> definitions)
 			{
 				setContent(definitions);
 			}
 
+			ObjectTable& operator =(const ObjectTable& otherTable)
+			{
+				copyFromTable(otherTable);
+				return *this;
+			}
+
 			~ObjectTable()
 			{
-				for (int i = 0; i < m_size; i++)
+				if( !m_empty )
 				{
-				//	delete (m_definitions[i]);
+					for (int i = 0; i < m_size; i++)
+					{
+						delete m_definitions[i];
+					}
+					delete[] m_definitions;
 				}
-				delete[] m_definitions;
 			}
 
 			size_t getSize() const { return m_size; }
@@ -49,7 +78,7 @@ namespace blf
 				int i = 0;
 				for (ObjectDefinition definition : definitions)
 				{
-					m_definitions[i] = new ObjectDefinition;
+					m_definitions[i] = new ObjectDefinition();
 					for (ObjectAttribute attribute : definition.attributes)
 					{
 						ObjectAttribute nAttr = attribute;
@@ -59,7 +88,8 @@ namespace blf
 					m_definitions[i]->identifier = definition.identifier;
 					m_definitions[i]->templatePointer = definition.templatePointer;
 					m_definitions[i]->creator = definition.creator;
-					m_definitions[i]->activeAttributeIndexes = definition.activeAttributeIndexes;
+					m_definitions[i]->activeAttributeCount = definition.activeAttributeCount;
+					//m_definitions[i]->activeAttributeIndexes = definition.activeAttributeIndexes;
 					m_definitions[i]->isForeign = definition.isForeign;
 					i++;
 				}
@@ -70,22 +100,21 @@ namespace blf
 			 */
 			void insertDefinition(ObjectDefinition definition)
 			{
-				int oldSize = m_size;
+				size_t oldSize = m_size;
 
-				m_empty = true;
-				m_size += 1;
+				m_empty = false;
+				m_size++;
 
-				ObjectDefinition** newDefinitions = new ObjectDefinition*[oldSize + 1];
+				ObjectDefinition** oldDefinitions = m_definitions;
+				m_definitions = new ObjectDefinition*[m_size];
 
 				// Copying the array over.
-				for (int i = 0; i < oldSize; i++)
+				for (int i = 0; i < m_size; i++)
 				{
-					(newDefinitions[i]) = (m_definitions[i]);
-					m_definitions[i] = nullptr;
+					(m_definitions[i]) = (oldDefinitions[i]);
 				}
 
-				ObjectDefinition* defPtr = new ObjectDefinition;
-				//defPtr->attributes = definition.attributes;
+				ObjectDefinition* defPtr = new ObjectDefinition();
 				for (ObjectAttribute attribute : definition.attributes)
 				{
 					defPtr->attributes.push_back(attribute);
@@ -93,14 +122,13 @@ namespace blf
 				defPtr->identifier = definition.identifier;
 				defPtr->templatePointer = definition.templatePointer;
 				defPtr->creator = definition.creator;
-				defPtr->activeAttributeIndexes = definition.activeAttributeIndexes;
 				defPtr->isForeign = definition.isForeign;
+				defPtr->activeAttributeCount = definition.activeAttributeCount;
 
-				delete[] m_definitions;
+				delete[] oldDefinitions;
 
-				m_definitions = newDefinitions;
 
-				m_definitions[m_size - 1] = defPtr;
+				m_definitions[oldSize] = defPtr;
 			}
 
 			ObjectDefinition* getDefinitionFromIndex(int index) const

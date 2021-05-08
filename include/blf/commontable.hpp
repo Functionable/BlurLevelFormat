@@ -34,8 +34,14 @@ namespace blf
 		uint64_t m_arraySize;
 
 		void computeIndexerSize();
+		
+		void copyFromTable(const CommonTable& otherTable);
 
 		public:
+			CommonTable() : m_indexerSize(0), m_objectList(std::vector<TemplateObject*>()), m_isArrayBuilt(false),m_builtArray(nullptr), m_arraySize(0) {};
+
+			CommonTable(const CommonTable& otherTable);
+
 			~CommonTable();
 
 			using ConstIterator = TemplateArrayConstIterator;
@@ -90,6 +96,8 @@ namespace blf
 			void forceListAsArray(std::vector<TemplateObject*>* list);
             
             TemplateObject* operator[](const int index) const;
+
+			CommonTable& operator=(const CommonTable& table);
 
 			/* These are to support foreach loops in c++ */
 			/* Note: These functions WILL pull from the array, not the internal list. */

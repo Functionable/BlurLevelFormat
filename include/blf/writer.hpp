@@ -133,7 +133,7 @@ namespace blf
 				{
 					ObjectAttribute* objectAttribute = &objectDefinition->attributes[i];
 					void* offset = getOffsetFromPointers(objectDefinition->templatePointer, objectAttribute->offset);
-					void* location = getPointerFromOffset(obj, offset);
+					void* location = getPointerFromOffset(obj->dataPtr(), offset);
 					int8_t size = getTypeSize(objectAttribute->attribType);
 
 					dynamicWrite(&objectAttribute->name);

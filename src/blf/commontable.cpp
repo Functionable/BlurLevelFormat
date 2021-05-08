@@ -5,6 +5,30 @@
 
 namespace blf
 {
+	void CommonTable::copyFromTable(const CommonTable& otherTable)
+	{
+		m_indexerSize = otherTable.m_indexerSize;
+		m_isArrayBuilt = otherTable.m_isArrayBuilt;
+		m_arraySize = otherTable.m_arraySize;
+		if( !m_isArrayBuilt )
+		{
+			m_objectList = otherTable.m_objectList;
+		}
+		else
+		{
+			m_builtArray = new TemplateObject*[m_arraySize];
+			for( size_t i = 0; i < m_arraySize; i++)
+			{
+				m_builtArray[i] = otherTable.m_builtArray[i];
+			}
+		}
+	}
+
+	CommonTable::CommonTable(const CommonTable& otherTable)
+	{
+		copyFromTable(otherTable);
+	}
+
 	void CommonTable::computeIndexerSize()
 	{
 		uint64_t size = getArraySize();
@@ -40,7 +64,7 @@ namespace blf
 
 	void CommonTable::clearArray()
 	{
-		if (m_isArrayBuilt)
+		if (m_isArrayBuilt && m_arraySize > 0 )
 		{
 			delete m_builtArray;
 		}
@@ -61,7 +85,7 @@ namespace blf
 	{
 		std::vector<TemplateObject*> temporary;
 		int size = list->size();
-		blf::TemplateObject* object = (*list)[0];
+		blf::TemplateObject* object = ((size > 0) ? ((*list)[0]) : nullptr);
 		for (int i = 0; i < size; i++, object = (*list)[std::min(i, (size - 1))])
 		{
 			if (object == nullptr)
@@ -113,7 +137,6 @@ namespace blf
 				}
 			}
 		}
-
 		forceListAsArray(&temporary);
 	}
 
@@ -121,7 +144,10 @@ namespace blf
 	{
 		m_isArrayBuilt = true;
 		m_arraySize = list->size();
-		m_builtArray = new TemplateObject * [m_arraySize];
+		if( m_arraySize > 0 )
+		{
+			m_builtArray = new TemplateObject * [m_arraySize];
+		}
 		for (uint64_t i = 0; i < m_arraySize; i++)
 		{
 			m_builtArray[i] = (*list)[i];
@@ -137,6 +163,13 @@ namespace blf
     {
         return m_builtArray[index];
     }
+
+	CommonTable& CommonTable::operator=(const CommonTable& table)
+	{
+		if( this == &table ) return *this;
+
+		copyFromTable(table);
+	}
 	
 	// Remember, these only return positions IN the BUILT ARRAY!
 	TemplateObject** CommonTable::begin() const { return &m_builtArray[0]; }
