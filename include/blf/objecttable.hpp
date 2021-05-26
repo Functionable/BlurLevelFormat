@@ -64,6 +64,9 @@ namespace blf
 				}
 			}
 
+			ObjectDefinition** begin() const { return &m_definitions[0]; }
+			ObjectDefinition** end() const { return &m_definitions[m_size]; }
+
 			size_t getSize() const { return m_size; }
 			uint8_t getIndexerSize() const { return m_indexerSize; }
 
