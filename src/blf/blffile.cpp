@@ -5,6 +5,8 @@
 #include "blf/writer.hpp"
 #include "blf/reader.hpp"
 
+#include "blf/exceptions/outdatedreader.hpp"
+
 #include <chrono>
 
 namespace blf
@@ -37,11 +39,8 @@ namespace blf
         std::cout << "BLF: STARTING WRITE" << std::endl;
         writer.writeInformationHeader(header);
         writer.writeObjectTable(objects);
-        std::cout << "COMM" << std::endl;
         writer.writeCommonTable(common, objects);
-        std::cout << "DAT" << std::endl;
         writer.writeDataTable(data, objects, common);
-        std::cout << "TIM" << std::endl;
         auto t2 = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
 
@@ -89,6 +88,13 @@ namespace blf
         blf::Reader levelReader(file.path);
         file.header = levelReader.dynamicRead<blf::InformationHeader>();
 
+        bool larger = (file.header.major > VERSION_MAJOR || (file.header.major > VERSION_MAJOR && file.header.minor > VERSION_MINOR ));
+
+        if( larger )
+        {
+            throw OutdatedReaderException(VERSION_MAJOR, VERSION_MINOR, VERSION_FIX, file.header.major, file.header.minor, file.header.fix);
+        }
+
         levelReader.readObjectTable(file.objects);
         
         file.common = levelReader.readCommonTable(file.objects);
@@ -101,17 +107,6 @@ namespace blf
 
 
         blf::ObjectDefinition* definition = file.objects.getDefinitionFromIndex(0);
-        /*for( int i = 0; i < file.objects.getSize(); i++, definition = file.objects.getDefinitionFromIndex(i))
-        {
-            std::cout << ((definition->isForeign) ? "[F] " : "") << definition->identifier << std::endl;
-            for( blf::ObjectAttribute attribute : definition->attributes )
-            {
-                std::cout << "- " << ((attribute.isForeign | definition->isForeign) ? "[F] " : "") << attribute.name << 
-                ((attribute.isActive) ? ": Active!" : "" ) << std::endl;
-                std::cout << "-> " << (int)getTypeSize(attribute.attribType) << std::endl;
-                std::cout << "-> " << (unsigned long long)attribute.offset << std::endl;
-            }
-        }*/
 
         auto t4 = std::chrono::high_resolution_clock::now();
         auto duration2 = std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3).count();
