@@ -54,7 +54,7 @@ namespace blf
             
             ReferenceType operator[](int index)
             {
-                return m_dataArray[m_indices[index]];
+                return dynamic_cast<ValueType>(m_dataArray[m_indices[index]]);
             }
             
             PointerType operator->()
@@ -64,7 +64,7 @@ namespace blf
             
             ValueType operator*()
             {
-                return (ValueType)(m_dataArray[m_indices[m_index]]);
+                return dynamic_cast<ValueType>(m_dataArray[m_indices[m_index]]);
             }
             
             bool operator==(const DataGroupIterator& other) const
