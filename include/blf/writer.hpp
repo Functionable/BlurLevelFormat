@@ -118,6 +118,36 @@ namespace blf
 				write((uint8_t)255);
 			}
 
+			void writeForeignAttributes(const ForeignAttributeTable& foreignAttributes, const CommonTable& common)
+			{
+				write((uint32_t)(foreignAttributes.getSize()));
+				for(ObjectAttribute attribute : foreignAttributes )
+				{
+					void* location = attribute.offset;
+					dynamicWrite(&attribute.name);
+					std::cout << "ATTR " << attribute.name << std::endl;
+					std::cout << "ATTR2 " << std::endl;
+					write<int8_t>((int8_t)attribute.attribType);
+					int size = getTypeSize(attribute.attribType);
+					if (size != -1)
+					{
+						m_writeStream->write((char*)location, size);
+					}
+					else
+					{
+                        if( attribute.attribType == TYPE_STRING )
+                        {
+                            dynamicWrite(((String*)location));
+                        }
+                        else if(attribute.attribType == TYPE_OBJECTREFERENCE)
+                        {
+							TemplateObject* object = (TemplateObject*)location;
+							writeIndexer(object->commonTableIndex, common.getIndexerSize());
+						}
+					}
+				}	
+			}
+
 			/**
 			 *	Writes the object to the file, make sure you stored your defined blf::ObjectTable first, using storeObjectTable(blf::ObjectTable).
 			 *	After you've done that, the blf::Writer will manage the rest.
@@ -149,11 +179,13 @@ namespace blf
                         }
                         else if(objectAttribute->attribType == TYPE_OBJECTREFERENCE)
                         {
-								TemplateObject* object = (TemplateObject*)location;
-								writeIndexer(object->commonTableIndex, common.getIndexerSize());
+							TemplateObject* object = (TemplateObject*)location;
+							writeIndexer(object->commonTableIndex, common.getIndexerSize());
 						}
 					}
 				}
+
+				writeForeignAttributes(obj->getForeignAttributes(), common);
 			}
 
 			Writer(blf::String filePath);

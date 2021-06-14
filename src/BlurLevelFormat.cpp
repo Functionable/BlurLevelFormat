@@ -11,29 +11,9 @@
 #include <cstdlib>
 #include <ctime>
 
-#include "blf/string.hpp"
-#include "blf/reader.hpp"
-#include "blf/writer.hpp"
-#include "blf/datatable.hpp"
-#include "blf/objecttable.hpp"
-#include "blf/commontable.hpp"
-#include "blf/templateobject.hpp"
-#include "blf/templatecreator.hpp"
-#include "blf/objectattribute.hpp"
-#include "blf/objectdefinition.hpp"
-#include "blf/foreignattributetable.hpp"
+#include "blf.hpp"
 
-#include "blf/blffile.hpp"
-
-
-#include "blf/basereadable.hpp"
-#include "blf/basewriteable.hpp"
-#include "blf/dynamicwriteable.hpp"
-#include "blf/dynamicreadable.hpp"
-
-#include "blf/datagroup.hpp"
-
-const int TEST_TILES = 20000;
+const int TEST_TILES = 8;
 const char* BLF_TILE_NAME = "Tile";
 
 // Defining STRDUP as different functions depending on the platform.
@@ -74,7 +54,7 @@ class Texture : public blf::TemplateObject
 		void storeForeignAttributes(blf::ForeignAttributeTable table) override
 		{
 			// Nowhere to store these, instead we're gonna print them
-			for (blf::ObjectAttribute attr : table.attributes)
+			for (blf::ObjectAttribute attr : table)
 			{
 				std::cout << "Attribute of type " << attr.attribType << " which has the name of: " << attr.name << std::endl;
 			}
@@ -108,7 +88,7 @@ class testObject : public blf::TemplateObject
 		void storeForeignAttributes(blf::ForeignAttributeTable table) override
 		{
 			// Nowhere to store these, instead we're gonna print them
-			for (blf::ObjectAttribute attr : table.attributes)
+			for (blf::ObjectAttribute attr : table)
 			{
 				std::cout << "Attribute of type " << attr.attribType << " which has the name of: " << attr.name << std::endl;
 			}
@@ -153,14 +133,13 @@ class Tile : public blf::TemplateObject
 			};
 		}
 
-		void storeForeignAttributes(blf::ForeignAttributeTable table) override
-		{
-			// Nowhere to store these, instead we're gonna print them
-			for (blf::ObjectAttribute attr : table.attributes)
-			{
-				std::cout << "Attribute of type " << attr.attribType << " which has the name of: " << attr.name << std::endl;
-			}
-		}
+		/* NOTE! A class deriving fromForeignObject does NOT require you to override
+		storeForeignAttributes in order to use it, however it might come in useful
+		when you need to use it to log these foreign attributes, alternatively you may need to insert equivalent objects into an object in a scripting language running at runtime, or other edge cases which this virtual function should hopefully cover. If you don't need such functionality, you need not worry about foreign attribute tables. 
+		
+		TL;DR: You most likely don't need to override storeForeignAttributes/getForeignAttributes, and if you do, read what it enables in the full paragraph.
+		
+		*/
 };
 
 class StateTile : public Tile
@@ -190,6 +169,15 @@ class StateTile : public Tile
 
 void writetest()
 {
+	const int names = 4;
+	blf::String identifiers[names] = 
+	{
+		"kippen",
+		"koppen",
+		"homo",
+		"mongool"
+	};
+
 	// WRITING
 	std::vector<Tile> tiles;
 
@@ -217,6 +205,13 @@ void writetest()
 	{
 		std::string test = "Tile " + std::to_string(i);
 
+		blf::ForeignAttributeTable attributeTable;
+		attributeTable.addAttribute({
+			identifiers[rand() % 4],
+			&identifiers[rand() % 4],
+			blf::TYPE_STRING
+		});
+
 		tiles.emplace_back(
             test,
             5,
@@ -224,29 +219,20 @@ void writetest()
             4,
             &textures[rand() % 4]
         );
+		tiles[i].storeForeignAttributes(
+			attributeTable
+		);
 
 		data.addObject(&(tiles[i]));
 	}
 
-	auto t1 = std::chrono::high_resolution_clock::now();
-
 	blf::writeFile("level.blf", objects, data);
-    
-	auto t2 = std::chrono::high_resolution_clock::now();
-	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
-
-	std::cout << "Write completed in: " << duration << " milliseconds." << std::endl;
-
-	std::cout << "Common objects:" << std::endl;
-
 }
 
 
 void readtest()
 {
 	// READING
-	auto t3 = std::chrono::high_resolution_clock::now();
-
 	blf::BLFFile readFile;
 
 	blf::ObjectTable objects = {
@@ -256,10 +242,15 @@ void readtest()
 
 	blf::readFile("level.blf", readFile, objects);
 
-	auto t4 = std::chrono::high_resolution_clock::now();
-	auto duration2 = std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3).count();
-	std::cout << "Read completed in: " << duration2 << " milliseconds." << std::endl;
-	std::cout << "W" << std::endl;
+	for(Tile* tile : readFile.data.get<Tile>())
+	{
+		std::cout << "One tile object in the array" << std::endl;
+		for ( blf::ObjectAttribute attribute : tile->getForeignAttributes())
+		{
+			std::cout << "Tag:" << std::endl;
+			std::cout << attribute.name << std::endl;
+		}
+	}
 }
 
 /*

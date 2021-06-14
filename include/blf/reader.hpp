@@ -220,7 +220,7 @@ namespace blf
                             *((int*)foreignLoc) = commonTableReference;
                         }
                     }
-                    foreignAttributes->addDefinition({objectAttribute->name, foreignLoc, objectAttribute->attribType, objectAttribute->referencedType});
+                    foreignAttributes->addAttribute({objectAttribute->name, foreignLoc, objectAttribute->attribType, objectAttribute->referencedType});
                     return; 
                 }
 				if (size != SIZE_DYNAMIC)
@@ -242,6 +242,20 @@ namespace blf
 					}
 				}
             }
+			
+			void readForeignAttributeTable(ForeignAttributeTable* foreignAttributeTable, int commonTableIndexerSize)
+			{
+				std::cout << "reading" << std::endl;
+				uint32_t size = read<uint32_t>();
+				for( size_t index = 0; index < size; index++ )
+				{
+
+					blf::String name = dynamicRead<blf::String>();
+					BLF_TYPE type = (BLF_TYPE)read<int8_t>();
+					ObjectAttribute attribute = {name, nullptr, type, nullptr, false, true};
+					readAttribute(&attribute, commonTableIndexerSize, nullptr, foreignAttributeTable);
+				}
+			}
 
 			TemplateObject* readObject(const ObjectTable& objectTable, uint8_t commonTableIndexerSize)
 			{
@@ -273,6 +287,8 @@ namespace blf
                     
                     readAttribute(objectAttribute, commonTableIndexerSize, location, &foreignAttributes);
                 }
+
+				readForeignAttributeTable(&foreignAttributes, commonTableIndexerSize);
 
 				obj->storeForeignAttributes(foreignAttributes);
 

@@ -30,5 +30,10 @@ namespace blf
 			{
 				m_foreignAttributes = table;
 			};
+
+			virtual const ForeignAttributeTable& getForeignAttributes() const
+			{
+				return m_foreignAttributes;
+			}
 	};
 }

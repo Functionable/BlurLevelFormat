@@ -2,8 +2,9 @@
 
 namespace blf
 {
-    void ForeignAttributeTable::addDefinition(ObjectAttribute definition)
+    void ForeignAttributeTable::addAttribute(ObjectAttribute definition)
     {
         attributes.push_back(definition);
+        std::cout << definition.name << std::endl;
     }
 }
