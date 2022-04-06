@@ -1,8 +1,8 @@
 # Compiler variables.
 GXX=g++
 WINDOWSGXX=g++
-CXXFLAGS=-no-pie -ldl -g
-WINDOWSCXXFLAGS=-no-pie -lgdi32 -static -static-libgcc -static-libstdc++ -O3 -s -Os
+CXXFLAGS=-no-pie -g -lz -O3 -s -Os
+WINDOWSCXXFLAGS=-no-pie -lz -static -static-libgcc -static-libstdc++ -O3 -s -Os
 INCLUDES=./include
 LIBS=./libs
 RM=rm -rf
@@ -73,9 +73,9 @@ $(OUT): $(OBJECTNAMES)
 	@echo -e "$(no_color)Incrementing the $(yellow)Build Configuration Number...$(no_color)"
 	@echo $(shell expr $(BUILDNUMBER) + 1) > $(BUILDFILE)
 	@echo -e "$(no_color)Launching $(yellow)$(notdir $(OUT))...$(no_color)"
-	@$(OUT)
+	#@$(OUT)
 
-windows: $(MINGWOBJECTS) $(MINGWADDITIONAL) $(BUILDFILE)
+windows: $(OBJDIRS) $(MINGWOBJECTS) $(MINGWADDITIONAL) $(BUILDFILE)
 		@echo -e "$(no_color)Linking $(yellow)$(notdir $(OUT))...$(no_color)"
 		@$(WINDOWSGXX) -std=c++17 $(MINGWADDITIONAL) $(MINGWOBJECTS) -L $(LIBS)/mingw64 -I $(INCLUDES) $(WINDOWSCXXFLAGS) -o $(OUT).exe
 		@echo -e "$(no_color)Incrementing the $(yellow)Build Configuration Number...$(no_color)"
