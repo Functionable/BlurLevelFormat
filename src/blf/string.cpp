@@ -25,17 +25,14 @@ namespace blf
 		m_stringBuffer = new char[m_bufferSize];
 
 		memcpy(m_stringBuffer, otherString.m_stringBuffer, m_bufferSize);
-		/*for( int i = 0; i < m_stringSize; i++ )
-		{
-			m_stringBuffer[i] = 'a';
-		}*/
+
 		m_stringBuffer[m_stringSize] = '\0';
 
 		// Since we duplicated the string buffer, we have to delete.
 		m_shouldDelete = true;
 	}
 
-	String String::operator+(const String& otherString)
+	String String::operator+(const String& otherString) const
 	{
 		return String();
 	}
@@ -47,7 +44,7 @@ namespace blf
 		return *this;
 	}
 
-	bool String::operator==(const String& otherString)
+	bool String::operator==(const String& otherString) const
 	{
 		//bool isNullptr = otherString == nullptr;
 		if (otherString.m_stringSize != this->m_stringSize)
@@ -114,15 +111,6 @@ namespace blf
 		setupCString(stringBuffer, strlen(stringBuffer) + 1);
 
 		// Not our buffer.
-		m_shouldDelete = false;
-	}
-
-	template<size_t size>
-	String::String(const char(&stringBuffer)[size])
-	{
-		setupCString(stringBuffer, size);
-
-		// Not our buffer, not our responsiblity.
 		m_shouldDelete = false;
 	}
 

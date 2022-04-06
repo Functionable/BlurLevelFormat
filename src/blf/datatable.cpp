@@ -13,7 +13,7 @@ namespace blf
 
 	void DataTable::addObject(TemplateObject* object)
 	{
-		m_objectList.push_back(object);
+		m_objectList.emplace_back(object);
 	}
 
 	void DataTable::computeCommonTable(blf::CommonTable& table, const blf::ObjectTable& objectTable)

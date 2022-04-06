@@ -19,16 +19,16 @@ namespace blf
         DataTable          data;
     };
 
-    void    writeFile(const BLFFile& file);
-    void    writeFile(const char* const path, const ObjectTable& objects, DataTable& data);
-    void    writeFile(const char* const path, const InformationHeader& header, const ObjectTable& objects, const CommonTable& common, const DataTable& data);
+    void    writeFile(const BLFFile& file, BLF_FLAG flag = DEFAULT_FLAG);
+    void    writeFile(const char* const path, const ObjectTable& objects, DataTable& data, BLF_FLAG flag = DEFAULT_FLAG);
+    void    writeFile(const char* const path, const InformationHeader& header, const ObjectTable& objects, const CommonTable& common, const DataTable& data, BLF_FLAG flag = DEFAULT_FLAG);
     
-    BLFFile readFile(const char* const path, const blf::ObjectTable& objects);
+    BLFFile readFile(const char* const path, const blf::ObjectTable& objects, BLF_FLAG flag = DEFAULT_FLAG);
 
-    void    readFile(const char* path, blf::BLFFile& file, const ObjectTable& objects);
+    void    readFile(const char* path, blf::BLFFile& file, const ObjectTable& objects, BLF_FLAG flag = DEFAULT_FLAG);
     /**
      *  Assumes all required objects are found within the BLFFile object.
      */
-    void    readFile(blf::BLFFile& file);
-    void    readFile(blf::BLFFile& file, const ObjectTable& objects);
+    void    readFile(blf::BLFFile& file, BLF_FLAG flag = DEFAULT_FLAG);
+    void    readFile(blf::BLFFile& file, const ObjectTable& objects, BLF_FLAG flag = DEFAULT_FLAG);
 }

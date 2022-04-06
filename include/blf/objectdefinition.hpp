@@ -12,6 +12,9 @@ namespace blf
 {
 	struct ObjectDefinition
 	{
+		uint64_t foreignIndex;
+		uint64_t arrayIndex;
+
 		// This is what you use to detect object types in C++ when reading.
 		blf::String identifier;
 		void* templatePointer = nullptr;
@@ -37,9 +40,12 @@ namespace blf
 		//std::vector<int> activeAttributeIndexes;  
         
         uint32_t activeAttributeCount = 0;
+
+		uint32_t foreignAttributeCount = 0;
 	};
     
-    ObjectAttribute* getObjectAttributeByIdentifier(ObjectDefinition* definition, String identifier);
+    ObjectAttribute* getAttributeFromIdentifier(ObjectDefinition* definition, String identifier);
+	ObjectAttribute* getAttributeFromActiveIndex(ObjectDefinition* definition, uint64_t activeIndex);
 
 	/**
 	 * Copies object data to a object definition that can be later managed by blf classes.

@@ -10,7 +10,7 @@ namespace blf
 	struct ObjectAttribute
 	{
 		blf::String name;
-		void* offset;
+		void* offset; // For defined objects, this is the offset from the object pointer, however for foreign attributes this is the absolute pointer to the attribute.
 		BLF_TYPE attribType;
 
 		/**
@@ -29,6 +29,8 @@ namespace blf
 		 *	and only in the file's object table.
 		 */
 		bool isForeign = false;
+
+		uint64_t activeIndex = 0;
 	};
 
 	/**

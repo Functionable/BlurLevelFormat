@@ -33,6 +33,8 @@ namespace blf
 			case TYPE_LONG:
 				return 8;
 		}
+
+		return 0;
 	}
 
 	uint8_t getAbsoluteTypeSize(BLF_TYPE type)
@@ -64,6 +66,8 @@ namespace blf
 			case TYPE_LONG:
 				return 8;
 		}
+
+		return 0;
 	}
 	
     BLF_TYPECATEGORY getTypeCategory(BLF_TYPE type)
@@ -94,5 +98,7 @@ namespace blf
             case TYPE_LONG:
                 return CATEGORY_NUMERICFLOAT;
         }
+
+		return CATEGORY_NONE;
     }
 }
