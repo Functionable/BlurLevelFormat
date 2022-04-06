@@ -98,6 +98,9 @@ namespace blf
 				computeIndexerSize();
 			};
 
+			ObjectDefinition** begin() const { return &m_definitions[0]; }
+			ObjectDefinition** end() const { return &m_definitions[m_size]; }
+
 			/*
 			 *	Should be called after setContent was.
 			 */

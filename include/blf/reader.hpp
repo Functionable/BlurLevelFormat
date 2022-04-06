@@ -78,6 +78,11 @@ namespace blf
 					header.compressionFlags = read<uint8_t>();
 					header.headerFlagCount  = read<uint16_t>();
 				}
+				else
+				{
+					header.compressionFlags = 0;
+					header.headerFlagCount = 0;
+				}
 
 				return header;
 			}
@@ -346,7 +351,7 @@ namespace blf
 				{
 					uint64_t foreignIndex = readIndexer(objectTable.getIndexerSize());
 					objectDefinition = objectTable.getDefinitionFromForeignIndex(foreignIndex);
-					knownForeignObjects = read<uint32_t>();
+					//knownForeignObjects = read<uint32_t>();
 				}
 
 				if (objectDefinition == nullptr)
@@ -372,7 +377,7 @@ namespace blf
 					}
 					else
 					{
-						//uint64_t activeIndex = read<uint32_t>()+1;
+				////uint64_t activeIndex read<uint32_t>()+1+1;
 						//std::cout << activeIndex-1 << ", " << i << std::endl;
 						uint64_t activeIndex = i+1;
 						objectAttribute = getAttributeFromActiveIndex(objectDefinition, activeIndex);
@@ -384,7 +389,7 @@ namespace blf
                     readAttribute(objectAttribute, commonTableIndexerSize, location, &foreignAttributes);
                 }
 
-				readForeignAttributeTable(&foreignAttributes, objectDefinition, commonTableIndexerSize);
+				//readForeignAttributeTable(&foreignAttributes, objectDefinition, commonTableIndexerSize);
 
 				obj->storeForeignAttributes(foreignAttributes);
 
