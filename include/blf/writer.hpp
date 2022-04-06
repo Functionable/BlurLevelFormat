@@ -1,13 +1,16 @@
 #pragma once
 
+//#include <zlib.h>
+
+#include <sstream>
 #include <fstream>
+#include <cstring>
 
 #include "string.hpp"
 #include "datatable.hpp"
 #include "commontable.hpp"
 #include "objecttable.hpp"
 #include "templateobject.hpp"
-#include "dynamicwriteable.hpp"
 
 #include "informationheader.hpp"
 
@@ -15,34 +18,36 @@ namespace blf
 {
 	class Writer
 	{
-		std::ofstream* m_writeStream;
-		//ObjectTable* m_objectTable;
-		//CommonTable* m_commonTable;
+		String m_outputPath;
+		std::stringstream m_headerStream;
+		std::stringstream m_writeStream;
+		std::stringstream* m_currentStream;
 
+		bool m_allowCompression = false; // The option is there, if for some reason you want it.
+		bool m_verbose          = false;
+		
 		public:
 
 			template<typename T>
 			void write(T data)
 			{
-				static_assert(std::is_pod<T>::value, "Read only supports POD types.");
-				m_writeStream->write(reinterpret_cast<char*>(&data), sizeof(T));
+				static_assert(std::is_pod<T>::value, "Write only supports POD types.");
+				m_currentStream->write(reinterpret_cast<char*>(&data), sizeof(T));
 			}
 
-			template<typename T>
-			void dynamicWrite(T* value)
+			void writeString(const char* value)
 			{
-				blf::DynamicWriteable<T> writeable(value);
-				writeable.write(m_writeStream);
+				StringLength size = strlen(value);
+				write(size);
+				m_currentStream->write(value, size);
 			}
 
-			void storeObjectTable(ObjectTable* objectTable)
+			void writeString(const String& value)
 			{
-				//m_objectTable = objectTable;
-			}
+				StringLength size = value.getLength();
 
-			void storeCommonTable(CommonTable* commonTable)
-			{
-				//m_commonTable = commonTable;
+				write(size);
+				m_currentStream->write(value.getBuffer(), size);
 			}
 
 			void writeIndexer(uint64_t index, uint8_t size)
@@ -69,30 +74,34 @@ namespace blf
 
 			void writeInformationHeader(const InformationHeader& header)
 			{
-				m_writeStream->write(header.signature.getBuffer(), 4);
+				m_currentStream = &m_headerStream;
+				m_headerStream.write(header.signature.getBuffer(), 4);
 				write(header.major);
 				write(header.minor);
 				write(header.fix);
+				write<uint8_t>((header.compressionFlags | m_allowCompression));
+				write(header.headerFlagCount);
+				m_currentStream = &m_writeStream;
 			}
 
 			void writeObjectTable(const ObjectTable& table)
 			{
 				uint8_t indexerSize = table.getIndexerSize();
 				int64_t size = table.getSize();
-				//m_writeStream->write(reinterpret_cast<char*>(&indexerSize), sizeof(indexerSize));
-				//m_writeStream->write(reinterpret_cast<char*>(&size), sizeof(size));
+
 				write(indexerSize);
 				write(size);
 				for (int i = 0; i < size; i++)
 				{
 					blf::ObjectDefinition* definition = table.getDefinitionFromIndex(i);
-					dynamicWrite(&definition->identifier);
+					writeString(definition->identifier);
 					uint8_t attributeCount = definition->attributes.size();
 					write(attributeCount);
 					for (int j = 0; j < attributeCount; j++)
 					{
 						ObjectAttribute* attribute = &(definition->attributes[j]);
-						dynamicWrite(&attribute->name);
+						//dynamicWrite(&attribute->name);
+						writeString(attribute->name);
 						uint8_t type = attribute->attribType;
 						write(type);
 					}
@@ -120,24 +129,26 @@ namespace blf
 
 			void writeForeignAttributes(const ForeignAttributeTable& foreignAttributes, const CommonTable& common)
 			{
-				write((uint32_t)(foreignAttributes.getSize()));
+				int i = 0;
+				//write((uint32_t)(foreignAttributes.getSize()));
 				for(ObjectAttribute attribute : foreignAttributes )
 				{
 					void* location = attribute.offset;
-					dynamicWrite(&attribute.name);
-					std::cout << "ATTR " << attribute.name << std::endl;
-					std::cout << "ATTR2 " << std::endl;
+					//dynamicWrite(&attribute.name);
+					writeString(attribute.name);
+					//write<int16_t>(i);
 					write<int8_t>((int8_t)attribute.attribType);
 					int size = getTypeSize(attribute.attribType);
 					if (size != -1)
 					{
-						m_writeStream->write((char*)location, size);
+						m_currentStream->write((char*)location, size);
 					}
 					else
 					{
                         if( attribute.attribType == TYPE_STRING )
                         {
-                            dynamicWrite(((String*)location));
+                            //dynamicWrite(((String*)location));
+							writeString(*(String*)location);
                         }
                         else if(attribute.attribType == TYPE_OBJECTREFERENCE)
                         {
@@ -145,6 +156,7 @@ namespace blf
 							writeIndexer(object->commonTableIndex, common.getIndexerSize());
 						}
 					}
+					i++;
 				}	
 			}
 
@@ -157,25 +169,31 @@ namespace blf
 				const char* objectName = obj->getObjectName();
 				ObjectDefinition* objectDefinition = object.getDefinitionFromIdentifier(obj->getObjectName());
 				// Writing the identifier to the file.
-				dynamicWrite(&objectName);
+				//dynamicWrite(&objectName);
+				//writeString(objectName);
+				//std::cout << (int)object.getIndexerSize() << std::endl;
+				writeIndexer(objectDefinition->arrayIndex, object.getIndexerSize());
+				write((uint32_t)(obj->getForeignAttributes().getSize()));
+				//std::cout << objectDefinition->identifier << ": " << objectDefinition->arrayIndex << ", " << object.getSize() << " q" << (int)object.getIndexerSize() << std::endl;
 
-				for (int i = 0; i < objectDefinition->attributes.size(); i++)
+				for (uint32_t i = 0; i < objectDefinition->attributes.size(); i++)
 				{
 					ObjectAttribute* objectAttribute = &objectDefinition->attributes[i];
 					void* offset = getOffsetFromPointers(objectDefinition->templatePointer, objectAttribute->offset);
 					void* location = getPointerFromOffset(obj->dataPtr(), offset);
 					int8_t size = getTypeSize(objectAttribute->attribType);
 
-					dynamicWrite(&objectAttribute->name);
+					//write<uint32_t>(i);
 					if (size != -1)
 					{
-						m_writeStream->write((char*)location, size);
+						m_currentStream->write((char*)location, size);
 					}
 					else
 					{
                         if( objectAttribute->attribType == TYPE_STRING )
                         {
-                            dynamicWrite(((String*)location));
+                            //dynamicWrite(((String*)location));
+							writeString(*(String*)location);
                         }
                         else if(objectAttribute->attribType == TYPE_OBJECTREFERENCE)
                         {
@@ -188,12 +206,9 @@ namespace blf
 				writeForeignAttributes(obj->getForeignAttributes(), common);
 			}
 
-			Writer(blf::String filePath);
-			~Writer();
+			void flushToFile();
 
-			/**
-			 *	Returns the internal writer stream used.
-			 */
-			std::ofstream& getStream() { return *m_writeStream; }
+			Writer(String filePath, BLF_FLAG flags = FLAG_EMPTY);
+			~Writer();
 	};
 }

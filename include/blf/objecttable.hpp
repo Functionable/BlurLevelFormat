@@ -13,7 +13,7 @@ namespace blf
 	class ObjectTable
 	{
 		uint8_t m_indexerSize;
-		size_t m_size = 0;
+		size_t m_size;
 		ObjectDefinition** m_definitions;
 		bool m_empty = true;
 
@@ -33,15 +33,15 @@ namespace blf
 
 		public:
 
-			ObjectTable() {}
+			ObjectTable() : m_size(0), m_definitions(nullptr) {}
 
 			// COPY CONSTRUCTOR, COPY CONSTRUCTOR, NEEDED, IT IS.
-			ObjectTable(const ObjectTable& table)
+			ObjectTable(const ObjectTable& table) : ObjectTable()
 			{
 				copyFromTable(table);
 			}
 
-			ObjectTable(std::initializer_list<ObjectDefinition> definitions)
+			ObjectTable(std::initializer_list<ObjectDefinition> definitions) : ObjectTable()
 			{
 				setContent(definitions);
 			}
@@ -91,8 +91,11 @@ namespace blf
 					m_definitions[i]->activeAttributeCount = definition.activeAttributeCount;
 					//m_definitions[i]->activeAttributeIndexes = definition.activeAttributeIndexes;
 					m_definitions[i]->isForeign = definition.isForeign;
+					m_definitions[i]->arrayIndex = i;
 					i++;
 				}
+
+				computeIndexerSize();
 			};
 
 			/*
@@ -109,7 +112,7 @@ namespace blf
 				m_definitions = new ObjectDefinition*[m_size];
 
 				// Copying the array over.
-				for (int i = 0; i < m_size; i++)
+				for (int i = 0; i < m_size-1; i++)
 				{
 					(m_definitions[i]) = (oldDefinitions[i]);
 				}
@@ -124,16 +127,60 @@ namespace blf
 				defPtr->creator = definition.creator;
 				defPtr->isForeign = definition.isForeign;
 				defPtr->activeAttributeCount = definition.activeAttributeCount;
+				defPtr->arrayIndex = oldSize;
 
-				delete[] oldDefinitions;
-
-
+				if( oldDefinitions != nullptr )
+				{
+					delete[] oldDefinitions;
+				}
+				
 				m_definitions[oldSize] = defPtr;
+				computeIndexerSize();
+			}
+
+			void computeIndexerSize()
+			{
+				uint64_t size = getSize();
+				if (size < UINT8_MAX)
+				{
+					m_indexerSize = 1;
+					return;
+				}
+				else if (size < UINT16_MAX)
+				{
+					m_indexerSize = 2;
+					return;
+				}
+				else if (size < UINT32_MAX)
+				{
+					m_indexerSize = 4;
+					return;
+				}		
+				else if (size < UINT64_MAX)
+				{
+					m_indexerSize = 8;
+					return;
+				}
 			}
 
 			ObjectDefinition* getDefinitionFromIndex(int index) const
 			{
 				return m_definitions[index];
+			}
+
+			ObjectDefinition* getDefinitionFromForeignIndex(int foreignIndex) const
+			{
+				ObjectDefinition* definition = m_definitions[0];
+				for (int i = 0; i < m_size; i++, definition = m_definitions[i])
+				{
+					if (foreignIndex == definition->foreignIndex)
+					{
+						return definition;
+					}
+				}
+
+				//std::cout << "Warning! Definition " << foreignIndex << " could not be found!" << std::endl;
+				return nullptr;
 			}
 
 			ObjectDefinition* getDefinitionFromIdentifier(blf::String identifier) const
@@ -147,7 +194,7 @@ namespace blf
 					}
 				}
 
-				std::cout << "Warning! Definition '" << identifier << "' could not be found!" << std::endl;
+				//std::cout << "Warning! Definition '" << identifier << "' could not be found!" << std::endl;
 				return nullptr;
 			}
 	};

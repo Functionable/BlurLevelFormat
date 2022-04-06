@@ -1,6 +1,6 @@
 #pragma once
 /*
- *  This header loads all classes required to use BLF.
+ *  This header loads all files required to use BLF.
  */
 
 #include "blf/enums.hpp"
@@ -13,11 +13,6 @@
 
 #include "blf/writer.hpp"
 #include "blf/reader.hpp"
-
-#include "blf/basereadable.hpp"
-#include "blf/basewriteable.hpp"
-#include "blf/dynamicreadable.hpp"
-#include "blf/dynamicwriteable.hpp"
 
 #include "blf/informationheader.hpp"
 #include "blf/commontable.hpp"

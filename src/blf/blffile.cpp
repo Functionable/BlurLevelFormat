@@ -9,120 +9,110 @@
 
 #include <chrono>
 
+//#define BLF_DEBUG
+
 namespace blf
 {
-    void writeFile(const BLFFile& file)
+    void writeFile(const BLFFile& file, BLF_FLAG flag)
     {
-        writeFile(file.path, file.header, (const ObjectTable&)file.objects, file.common, file.data);
+        writeFile(file.path, file.header, (const ObjectTable&)file.objects, file.common, file.data, flag);
     }
 
-    void writeFile(const char* const path, const ObjectTable& objects, DataTable& data)
+    void writeFile(const char* const path, const ObjectTable& objects, DataTable& data, BLF_FLAG flag)
     {
-        InformationHeader header = {BLF_SIGNATURE, VERSION_MAJOR, VERSION_MINOR, VERSION_FIX};
+        InformationHeader header = {SIGNATURE, VERSION_MAJOR, VERSION_MINOR, VERSION_FIX};
         CommonTable common;
 
         data.computeCommonTable(common, objects);
         data.buildArray();
         common.buildCommonObjectArray();
 
-        writeFile(path, header, objects, common, data);
+        writeFile(path, header, objects, common, data, flag);
     }
 
-    void writeFile(const char* const path, const InformationHeader& header, const ObjectTable& objects, const CommonTable& common, const DataTable& data)
+    void writeFile(const char* const path, const InformationHeader& header, const ObjectTable& objects, const CommonTable& common, const DataTable& data, BLF_FLAG flag)
     {
-        auto t1 = std::chrono::high_resolution_clock::now();
-        blf::Writer writer(path);
+        #ifdef BLF_DEBUG
+            auto t1 = std::chrono::high_resolution_clock::now();
+        #endif
+        blf::Writer writer(path, flag);
 
-        //writer.storeObjectTable(objects);
-
-        //writer.storeCommonTable(common);
-        std::cout << "BLF: STARTING WRITE" << std::endl;
         writer.writeInformationHeader(header);
         writer.writeObjectTable(objects);
         writer.writeCommonTable(common, objects);
         writer.writeDataTable(data, objects, common);
-        auto t2 = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+        #ifdef BLF_DEBUG
+            auto t2 = std::chrono::high_resolution_clock::now();
+            auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+            std::cout << "Write completed in: " << duration << " milliseconds." << std::endl;
+        #endif
 
-        std::cout << "Write completed in: " << duration << " milliseconds." << std::endl;
-
-        std::cout << "Common objects:" << std::endl;
-        if (common.isArrayBuilt() && common.getArraySize() > 0)
-        {
-            for (blf::TemplateObject* tex : common)
-            {
-                for (blf::ObjectAttribute attrib : tex->getAttributeMap())
-                {
-                    std::cout << attrib.name << ": ";
-                    switch (attrib.attribType)
-                    {
-                        case blf::TYPE_STRING:
-                            blf::String* string = (blf::String*)attrib.offset;
-                            std::cout << *string;
-                            break;
-                    }
-                    std::cout << std::endl;
-                }
-            }
-        }
-        else
-        {
-            std::cout << "none" << std::endl;
-        }
+        writer.flushToFile();
     }
 
-    BLFFile readFile(const char* const path, const blf::ObjectTable& objects)
+    BLFFile readFile(const char* const path, const blf::ObjectTable& objects, BLF_FLAG flag)
     {
         BLFFile file;
         file.path    = path;
         file.objects = objects;
 
-        readFile(file);
+        readFile(file, flag);
 
         return file;
     }
 
-    void readFile(blf::BLFFile& file)
+    void readFile(blf::BLFFile& file, BLF_FLAG flag)
     {
-        auto t3 = std::chrono::high_resolution_clock::now();
-        blf::Reader levelReader(file.path);
-        file.header = levelReader.dynamicRead<blf::InformationHeader>();
+        #ifdef BLF_DEBUG
+            auto t3 = std::chrono::high_resolution_clock::now();
+        #endif
+        blf::Reader levelReader(file.path, flag);
+        file.header = levelReader.readHeader();
+        if( file.header.compressionFlags & 1 == 1 )
+        {
+            levelReader.decompress();
+        }
 
-        bool larger = (file.header.major > VERSION_MAJOR || (file.header.major > VERSION_MAJOR && file.header.minor > VERSION_MINOR ));
+        bool larger = (file.header.major > VERSION_MAJOR || (file.header.major >= VERSION_MAJOR && file.header.minor > VERSION_MINOR ));
 
         if( larger )
         {
-            throw OutdatedReaderException(VERSION_MAJOR, VERSION_MINOR, VERSION_FIX, file.header.major, file.header.minor, file.header.fix);
+            throw OutdatedReaderException(Version(VERSION_MAJOR, VERSION_MINOR, VERSION_FIX), Version(file.header.major, file.header.minor, file.header.fix));
         }
 
         levelReader.readObjectTable(file.objects);
-        
-        file.common = levelReader.readCommonTable(file.objects);
+        levelReader.readCommonTable(file.common, file.objects);
         file.common.buildCommonObjectArray();
 
         blf::DataTable data;
-        levelReader.readDataTable(&data, file.objects, file.common);
-        data.buildArray();
-        file.data = data;
+        #ifdef BLF_DEBUG
+            auto t5 = std::chrono::high_resolution_clock::now();
+        #endif
+        levelReader.readDataTable(&file.data, file.objects, file.common);
+        #ifdef BLF_DEBUG
+            auto t6 = std::chrono::high_resolution_clock::now();
+        #endif
+        file.data.buildArray();
 
-
-        blf::ObjectDefinition* definition = file.objects.getDefinitionFromIndex(0);
-
-        auto t4 = std::chrono::high_resolution_clock::now();
-        auto duration2 = std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3).count();
-        std::cout << "Read completed in: " << duration2 << " milliseconds." << std::endl;
+        #ifdef BLF_DEBUG
+            auto t4 = std::chrono::high_resolution_clock::now();
+            auto duration2 = std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3).count();
+            auto duration3 = std::chrono::duration_cast<std::chrono::milliseconds>(t6 - t5).count();
+            std::cout << "Read completed in: " << duration2 << " milliseconds." << std::endl;
+            std::cout << "Data-Table read in: " << duration3 << " milliseconds." << std::endl;
+        #endif
     }
 
-    void readFile(blf::BLFFile& file, const ObjectTable& objects)
+    void readFile(blf::BLFFile& file, const ObjectTable& objects, BLF_FLAG flag)
     {
         file.objects = objects;
-        readFile(file);
+        readFile(file, flag);
     }
 
-    void readFile(const char* path, blf::BLFFile& file, const ObjectTable& objects)
+    void readFile(const char* path, blf::BLFFile& file, const ObjectTable& objects, BLF_FLAG flag)
     {
         file.objects = objects;
         file.path    = path;
-        readFile(file);
+        readFile(file, flag);
     }
 }

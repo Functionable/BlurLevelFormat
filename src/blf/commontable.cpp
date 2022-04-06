@@ -24,9 +24,18 @@ namespace blf
 		}
 	}
 
-	CommonTable::CommonTable(const CommonTable& otherTable)
+	CommonTable::CommonTable(const CommonTable& otherTable) : CommonTable()
 	{
 		copyFromTable(otherTable);
+	}
+
+	CommonTable::CommonTable(CommonTable&& otherTable)
+	{
+		m_indexerSize = std::move(otherTable.m_indexerSize);
+		m_objectList = std::move(otherTable.m_objectList);
+		m_isArrayBuilt = std::move(otherTable.m_isArrayBuilt);
+		m_builtArray = std::move(otherTable.m_builtArray);
+		m_arraySize = std::move(otherTable.m_arraySize);
 	}
 
 	void CommonTable::computeIndexerSize()
@@ -66,7 +75,7 @@ namespace blf
 	{
 		if (m_isArrayBuilt && m_arraySize > 0 )
 		{
-			delete m_builtArray;
+			delete[] m_builtArray;
 		}
 	}
 

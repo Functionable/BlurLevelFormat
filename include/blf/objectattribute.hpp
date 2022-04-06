@@ -29,6 +29,8 @@ namespace blf
 		 *	and only in the file's object table.
 		 */
 		bool isForeign = false;
+
+		uint64_t activeIndex = 0;
 	};
 
 	/**

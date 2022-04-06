@@ -1,25 +1,32 @@
 #pragma once
 
 #include "string.hpp"
+#include "version.hpp"
 #include "datatable.hpp"
+#include "commontable.hpp"
 #include "objecttable.hpp"
-#include "dynamicreadable.hpp"
 #include "foreignobject.hpp"
 #include "templateobject.hpp"
-#include "commontable.hpp"
+#include "informationheader.hpp"
 
 #include <fstream>
+#include <sstream>
 #include <type_traits>
 
 namespace blf
 {
 	class Reader
 	{
-		std::ifstream* readStream;
+		std::stringstream m_readStream;
+
 		bool m_strictTypeChecking = false; // By default type differences end up in warnings.
+		bool m_verbose            = false;
+
+		// mainly just used for backwards compatibility
+		Version m_loadedVersion = Version(0, 0, 0);
 
 		public:
-			Reader(blf::String filePath, BLF_FLAG readerFlags = FLAG_NOTHING);
+			Reader(String filePath, BLF_FLAG readerFlags = FLAG_EMPTY);
 			~Reader();
 
 			/**
@@ -30,22 +37,49 @@ namespace blf
 			{
 				static_assert(std::is_pod<T>::value, "Read only supports POD types.");
 				T newInstance;
-				readStream->read(reinterpret_cast<char*>(&newInstance), sizeof(T));
+				m_readStream.read(reinterpret_cast<char*>(&newInstance), sizeof(T));
 
 				return newInstance;
 			}
 
-			/**
-			 *	Used to read more complex types that don't always have the
-			 *  same size, such as a const char* or blf::String.
-			 *  In order to do this, this function uses blf::DynamicReadable
-			 */
-			template<typename T>
-			T dynamicRead()
+			String readString()
 			{
-				DynamicReadable<T> readable;
-				readable.read(readStream);
-				return T(readable.getValue());
+				StringLength size = read<StringLength>();
+
+				char* id = new char[size + 1];
+
+				m_readStream.read(&id[0], size);
+				id[size] = (char)'\0';
+
+				return id;
+			}
+
+			void decompress();
+
+			InformationHeader readHeader()
+			{
+				InformationHeader header;
+
+				char signature[5];
+				m_readStream.read(&signature[0], 4);
+				signature[4] = '\0';
+
+				header.signature = blf::String((const char*)signature);
+				header.major = read<int32_t>();
+				header.minor = read<int32_t>();
+				header.fix   = read<int32_t>();
+
+				m_loadedVersion.major = header.major;
+				m_loadedVersion.minor = header.minor;
+				m_loadedVersion.fix   = header.fix;
+
+				if( m_loadedVersion != Version(1, 0, 0))
+				{
+					header.compressionFlags = read<uint8_t>();
+					header.headerFlagCount  = read<uint16_t>();
+				}
+
+				return header;
 			}
 
 			uint64_t readIndexer(uint8_t size)
@@ -83,14 +117,16 @@ namespace blf
 				size_t size = read<int64_t>();
 				for (int i = 0; i < size; i++)
 				{
-					blf::ObjectDefinition definition; 
-					definition.identifier = dynamicRead<String>();
+					ObjectDefinition definition; 
+					definition.identifier = readString();
+					definition.foreignIndex = i;
 					uint8_t attributeCount = read<uint8_t>();
 					for (int j = 0; j < attributeCount; j++)
 					{
 						ObjectAttribute attribute;
-						attribute.name = dynamicRead<String>();
+						attribute.name = readString();
 						attribute.attribType = (BLF_TYPE)read<uint8_t>();
+						attribute.activeIndex = j;
 						definition.attributes.push_back(attribute);
 					}
 					definitions.push_back(definition);
@@ -104,7 +140,10 @@ namespace blf
 					
 					if (nativeDefinition == nullptr)
 					{
-						std::cout << "Definition was nullptr, wasn't found, marking as foreign." << std::endl;
+						if( m_verbose )
+						{
+							std::cout << "Definition was nullptr, wasn't found, marking as foreign." << std::endl;
+						}
 						readDefinition.isForeign = true;
 						for (ObjectAttribute attribute : readDefinition.attributes)
 						{
@@ -115,6 +154,8 @@ namespace blf
 						definedTable.insertDefinition(readDefinition);
 						continue;
 					}
+
+					nativeDefinition->foreignIndex = readDefinition.foreignIndex;
 
 					this->processDefinitionAttributes(nativeDefinition, &definitions[i]);
 				}
@@ -132,8 +173,10 @@ namespace blf
 					{
 						if (fileAttribute.name == nativeAttribute.name)
 						{
+							uint64_t activeIndex = fileAttribute.activeIndex;
 							foundMatchingAttribute = true;
 							readAttribute = fileAttribute;
+							nativeAttribute.activeIndex = activeIndex+1;
 							readDefinition->attributes[j].isActive = true;
 							break;
 						}
@@ -143,10 +186,13 @@ namespace blf
 					// If matching definition couldn't be found.
 					if (foundMatchingAttribute == false)
 					{
-						// Warning the user.
-						std::cout << "Warning: Expected attribute for name '"
-							<< nativeAttribute.name <<
-							"' not found in file! Attribute won't be activated." << std::endl;
+						if( m_verbose )
+						{
+							// Warning the user.
+							std::cout << "Warning: Expected attribute for name '"
+								<< nativeAttribute.name <<
+								"' not found in file! Attribute won't be activated." << std::endl;
+						}
 						continue;
 					}
 
@@ -157,8 +203,11 @@ namespace blf
 					BLF_TYPE readAttribType   = readAttribute.attribType;
 					if (readAttribType != nativeAttribType)
 					{
-						std::cout << "File and native definitions differ, opting to use file's attrib type for: "
-						<< nativeAttribute.name << std::endl;                                
+						if( m_verbose )
+						{
+							std::cout << "File and native definitions differ, opting to use file's attrib type for: "
+							<< nativeAttribute.name << std::endl;                                
+						}
 						if( getTypeCategory(nativeAttribType) == getTypeCategory(readAttribType))
 						{
 							nativeAttribute.attribType = readAttribType;
@@ -166,15 +215,26 @@ namespace blf
 							//nativeAttribute.offset += sizeDiff;
 							if( getTypeSize(readAttribType) > getTypeSize(nativeAttribType))
 							{
-								std::cout << "File definition type is larger than native type! Opting to mark as foreign in order to prevent memory errors" << std::endl;
+								if( m_verbose )
+								{
+									std::cout << "File definition type is larger than native type! Opting to mark as foreign in order to prevent memory errors" << std::endl;
+								}
 								nativeAttribute.isForeign = true;
 							}
 						}
 						else
 						{
-							std::cout << "FATAL: Fatal type mismatch detected! Marking attribute as foreign in order to avoid errors" << std::endl;
+							if( m_verbose )
+							{
+								std::cout << "FATAL: Fatal type mismatch detected! Marking attribute as foreign in order to avoid errors" << std::endl;
+							}
 							nativeAttribute.isForeign = true;
 						}
+					}
+
+					if (nativeAttribute.isActive && nativeAttribute.isForeign)
+					{
+						nativeDefinition->foreignAttributeCount++;
 					}
 
 					nativeDefinition->attributes[i] = nativeAttribute;
@@ -184,7 +244,10 @@ namespace blf
 				{
 					if (attrib.isActive == false)
 					{
-						std::cout << "Assuming attribute '" << attrib.name << "' is foreign!" << std::endl;
+						if( m_verbose )
+						{
+							std::cout << "Assuming attribute '" << attrib.name << "' is foreign!" << std::endl;
+						}
                         attrib.isForeign = true;
                         nativeDefinition->attributes.push_back(attrib);
                     }
@@ -204,14 +267,14 @@ namespace blf
                     if (size != SIZE_DYNAMIC)
                     {
                         foreignLoc = new char[size];
-                        readStream->read((char*)foreignLoc, size);
+                        m_readStream.read((char*)foreignLoc, size);
                     }
                     else
                     {
                         if (objectAttribute->attribType == TYPE_STRING)
                         {
                             foreignLoc = new char[sizeof(String)];
-                            *((String*)foreignLoc) = dynamicRead<String>();
+                            *((String*)foreignLoc) = readString();
                         }							
                         else if(objectAttribute->attribType == TYPE_OBJECTREFERENCE)
                         {
@@ -225,15 +288,15 @@ namespace blf
                 }
 				if (size != SIZE_DYNAMIC)
 				{
-					readStream->read((char*)addr, size);
+					m_readStream.read((char*)addr, size);
 				}
 				else
 				{
 					if (objectAttribute->attribType == TYPE_STRING)
 					{
-						String str = dynamicRead<String>();
+						String str = readString();
 							
-						(*(blf::String*)addr) = str;
+						(*(String*)addr) = str;
 					}
 					else if (objectAttribute->attribType == TYPE_OBJECTREFERENCE)
 					{
@@ -243,14 +306,21 @@ namespace blf
 				}
             }
 			
-			void readForeignAttributeTable(ForeignAttributeTable* foreignAttributeTable, int commonTableIndexerSize)
+			void readForeignAttributeTable(ForeignAttributeTable* foreignAttributeTable, ObjectDefinition* obj, int commonTableIndexerSize)
 			{
-				std::cout << "reading" << std::endl;
-				uint32_t size = read<uint32_t>();
+				uint32_t size;
+				if (m_loadedVersion == Version(1, 0, 0))
+				{
+					size = read<uint32_t>();
+				}
+				else
+				{
+					size = foreignAttributeTable->getReserved() - obj->foreignAttributeCount;
+				}
+
 				for( size_t index = 0; index < size; index++ )
 				{
-
-					blf::String name = dynamicRead<blf::String>();
+					String name = readString();
 					BLF_TYPE type = (BLF_TYPE)read<int8_t>();
 					ObjectAttribute attribute = {name, nullptr, type, nullptr, false, true};
 					readAttribute(&attribute, commonTableIndexerSize, nullptr, foreignAttributeTable);
@@ -259,58 +329,79 @@ namespace blf
 
 			TemplateObject* readObject(const ObjectTable& objectTable, uint8_t commonTableIndexerSize)
 			{
-				// Reading the name of the object (used as a reference to the object table)
-				const char* objectName = dynamicRead<const char*>();
+				ObjectDefinition* objectDefinition;
 
-				ObjectDefinition* objectDefinition = objectTable.getDefinitionFromIdentifier(objectName);	
+				// The number of foreign objects that we know about, if we know the exact amount
+				// then reading will take less time. Of course that's impossible with older versions of BLF.
+				uint32_t knownForeignObjects = 0;
+
+				// Reading the name of the object (used as a reference to the object table)
+				if( m_loadedVersion == Version(1, 0, 0))
+				{
+					String objectName = readString();
+
+					objectDefinition = objectTable.getDefinitionFromIdentifier(objectName);	
+				}
+				else
+				{
+					uint64_t foreignIndex = readIndexer(objectTable.getIndexerSize());
+					objectDefinition = objectTable.getDefinitionFromForeignIndex(foreignIndex);
+					knownForeignObjects = read<uint32_t>();
+				}
 
 				if (objectDefinition == nullptr)
 				{
-					//	return nullptr;
-					std::cout << "Fatal! Definition for '" << objectName << "'" << std::endl;
 					return nullptr;
 				}
 
+				knownForeignObjects += objectDefinition->foreignAttributeCount;
+
 				bool foreign = objectDefinition->isForeign;
 
-				ForeignAttributeTable foreignAttributes;
+				ForeignAttributeTable foreignAttributes(knownForeignObjects);
 
-				TemplateObject* obj = (foreign) ? new ForeignObject(objectName, objectDefinition->attributes) : objectDefinition->creator->createNew();
+				TemplateObject* obj = (foreign) ? new ForeignObject(objectDefinition->identifier, objectDefinition->attributes) : objectDefinition->creator->createNew();
 
 				for (int i = 0; i < objectDefinition->activeAttributeCount; i++)
 				{
-                    blf::String attributeName = dynamicRead<blf::String>();
-					ObjectAttribute* objectAttribute = getObjectAttributeByIdentifier(objectDefinition, attributeName);
-                    
+					ObjectAttribute* objectAttribute;
+					if (m_loadedVersion == Version(1, 0, 0))
+					{
+						String attributeName = readString();
+						objectAttribute = getAttributeFromIdentifier(objectDefinition, attributeName);
+					}
+					else
+					{
+						//uint64_t activeIndex = read<uint32_t>()+1;
+						//std::cout << activeIndex-1 << ", " << i << std::endl;
+						uint64_t activeIndex = i+1;
+						objectAttribute = getAttributeFromActiveIndex(objectDefinition, activeIndex);
+					}
+
                     void* offset = getOffsetFromPointers(objectDefinition->templatePointer, objectAttribute->offset);
                     void* location = getPointerFromOffset(obj->dataPtr(), offset);
                     
                     readAttribute(objectAttribute, commonTableIndexerSize, location, &foreignAttributes);
                 }
 
-				readForeignAttributeTable(&foreignAttributes, commonTableIndexerSize);
+				readForeignAttributeTable(&foreignAttributes, objectDefinition, commonTableIndexerSize);
 
 				obj->storeForeignAttributes(foreignAttributes);
 
 				return obj;
 			}
 
-			CommonTable readCommonTable(const ObjectTable& objectTable)
+			void readCommonTable(CommonTable& table, const ObjectTable& objectTable)
 			{
-				CommonTable table;
-
 				uint8_t indexerSize = read<uint8_t>();
 
 				uint64_t tableSize = read<uint64_t>();
 
 				for (int i = 0; i < tableSize; i++)
 				{
-					blf::TemplateObject* object = readObject(objectTable, indexerSize);
+					TemplateObject* object = readObject(objectTable, indexerSize);
 					table.addCommonObject(object);
 				}
-				return table;
 			}
-
-			std::ifstream& getStream() { return *readStream; }
 	};
 }

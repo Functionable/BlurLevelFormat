@@ -2,24 +2,12 @@
 
 #include <string>
 
-#ifdef _WIN32
-	#define STRDUP(x) _strdup(x)
-#else
-	#define STRDUP(x) strdup(x)
-#endif
-
-#ifdef _WIN32
-	#define STRCPY(x) _strcpy(x)
-#else
-	#define STRCPY(x) strcpy(x)
-#endif
-
-
 namespace blf
 {
+	typedef uint32_t StringLength;
+
 	// This is supposed to be a class that intergrates any kind of string
 	// into the BLF object format.
-	// It isn't in any way trying to replace std::string.
 	class String
 	{
 		// The internal string buffer.
@@ -45,12 +33,11 @@ namespace blf
 		public:
 
 			// Operators
-			String operator+  (const String& otherString);
+			String operator+  (const String& otherString) const;
 			String operator=  (const String& otherString);
-			bool operator== (const String& otherString);
-			friend std::ostream& operator<<(std::ostream& ostream, String& string); // Allows couting blf strings.
+			bool operator== (const String& otherString) const;
+			friend std::ostream& operator<<(std::ostream& ostream, String& string);
 
-			// Conversions.
 			operator const char*() { return getBuffer(); }
 			explicit operator std::string() { return std::string(getBuffer(), getLength()); }
 
@@ -64,14 +51,20 @@ namespace blf
 			String(const std::string& string);
 			String(const char* stringBuffer);
 			template<size_t size>
-			String(const char(&stringBuffer)[size]);
+			String(const char(&stringBuffer)[size])
+			{
+				setupCString(stringBuffer, size);
+
+				m_shouldDelete = false;
+			}
+
 			String(const char* stringBuffer, size_t bufferLength);
 
 			~String();
 
 			// Getter methods for members.
-			size_t  getLength()       { return m_stringSize; }
-			size_t  getBufferLength() { return m_bufferSize; }
-			const char* getBuffer() const { return m_stringBuffer; }
+			size_t  getLength() const      	{ return m_stringSize; }
+			size_t  getBufferLength() const	{ return m_bufferSize; }
+			const char* getBuffer() const 	{ return m_stringBuffer; }
 	};
 }

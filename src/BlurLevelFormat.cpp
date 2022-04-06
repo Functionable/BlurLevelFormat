@@ -13,18 +13,8 @@
 
 #include "blf.hpp"
 
-const int TEST_TILES = 8;
+const int TEST_TILES = 100000;
 const char* BLF_TILE_NAME = "Tile";
-
-// Defining STRDUP as different functions depending on the platform.
-// This is needed because some windows compilers see strdup as deprecated
-// and use _strdup.
-
-#ifdef _WIN32
-#define STRDUP(x) _strdup(x)
-#else
-#define STRDUP(x) strdup(x)
-#endif
 
 class Texture : public blf::TemplateObject
 {
@@ -140,6 +130,14 @@ class Tile : public blf::TemplateObject
 		TL;DR: You most likely don't need to override storeForeignAttributes/getForeignAttributes, and if you do, read what it enables in the full paragraph.
 		
 		*/
+		void storeForeignAttributes(blf::ForeignAttributeTable table) override
+		{
+			// Nowhere to store these, instead we're gonna print them
+			for (blf::ObjectAttribute attr : table)
+			{
+				std::cout << "Attribute of type " << attr.attribType << " which has the name of: " << attr.name << std::endl;
+			}
+		}
 };
 
 class StateTile : public Tile
@@ -165,17 +163,15 @@ class StateTile : public Tile
 		using Tile::getObjectName;
 };
 
-
-
 void writetest()
 {
 	const int names = 4;
 	blf::String identifiers[names] = 
 	{
-		"kippen",
-		"koppen",
-		"homo",
-		"mongool"
+		"one",
+		"two",
+		"three",
+		"four"
 	};
 
 	// WRITING
@@ -214,14 +210,14 @@ void writetest()
 
 		tiles.emplace_back(
             test,
-            5,
-            6,
-            4,
+            rand() % 200,
+            rand() % 200,
+            rand() % 200,
             &textures[rand() % 4]
         );
-		tiles[i].storeForeignAttributes(
-			attributeTable
-		);
+		//tiles[i].storeForeignAttributes(
+		//	attributeTable
+		//);
 
 		data.addObject(&(tiles[i]));
 	}
@@ -230,7 +226,7 @@ void writetest()
 }
 
 
-void readtest()
+void readtest(const char* name)
 {
 	// READING
 	blf::BLFFile readFile;
@@ -240,17 +236,7 @@ void readtest()
 		blf::createDefinition<StateTile>(),
 	};
 
-	blf::readFile("level.blf", readFile, objects);
-
-	for(Tile* tile : readFile.data.get<Tile>())
-	{
-		std::cout << "One tile object in the array" << std::endl;
-		for ( blf::ObjectAttribute attribute : tile->getForeignAttributes())
-		{
-			std::cout << "Tag:" << std::endl;
-			std::cout << attribute.name << std::endl;
-		}
-	}
+	blf::readFile(name, readFile, objects);
 }
 
 /*
@@ -269,11 +255,18 @@ void readtest()
 	-	Group read objects by type, allow DataTable to return list of pointers to all objects of a group. [Y.D]
 */
 
-int main()
+int main(int argc, char** argv)
 {
-	std::cout << "begin" << std::endl;
-	writetest();
-	readtest();
+	std::string readPath = "level.blf";
 
-	std::cout << "end" << std::endl;
+	if( argc > 1 )
+	{
+		readPath = argv[1];
+	}
+
+	if( argc <= 1 )
+	{
+		writetest();
+	}
+	readtest(readPath.c_str());
 }

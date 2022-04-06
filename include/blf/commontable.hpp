@@ -41,6 +41,7 @@ namespace blf
 			CommonTable() : m_indexerSize(0), m_objectList(std::vector<TemplateObject*>()), m_isArrayBuilt(false),m_builtArray(nullptr), m_arraySize(0) {};
 
 			CommonTable(const CommonTable& otherTable);
+			CommonTable(CommonTable&& otherTable);
 
 			~CommonTable();
 
