@@ -375,7 +375,6 @@ namespace blf
 					//std::cout << "F" << foreignIndex << std::endl;
 					objectDefinition = objectTable.getDefinitionFromForeignIndex(foreignIndex);
 					//knownForeignObjects = read<uint32_t>();
-					//std::cout << objectDefinition->identifier << std::endl;
 				}
 
 				if (objectDefinition == nullptr)
