@@ -178,6 +178,8 @@ namespace blf
 		if( this == &table ) return *this;
 
 		copyFromTable(table);
+
+		return *this;
 	}
 	
 	// Remember, these only return positions IN the BUILT ARRAY!

@@ -78,6 +78,11 @@ namespace blf
 					header.compressionFlags = read<uint8_t>();
 					header.headerFlagCount  = read<uint16_t>();
 				}
+				else
+				{
+					header.compressionFlags = 0;
+					header.headerFlagCount = 0;
+				}
 
 				return header;
 			}
@@ -98,6 +103,8 @@ namespace blf
 					case 8:
 						return read<uint64_t>();
 				}
+
+				return 0;
 			}
 			
 			void readDataTable(DataTable* dataTable, const ObjectTable& objectTable, const CommonTable& commonTable)
@@ -105,28 +112,44 @@ namespace blf
                 uint8_t byte = read<uint8_t>();
                 while( byte == 0xAA )
                 {
-                    dataTable->addObject(readObject(objectTable, commonTable.getIndexerSize()));
+					//std::cout << "==== READ ======" << std::endl;
+					blf::TemplateObject* object = readObject(objectTable, commonTable.getIndexerSize());
+					if( object == nullptr )
+					{
+						std::cout << "Error: Abandoned reading due to a read error" << std::endl;
+						break;
+					}
+                    dataTable->addObject(object);
                     byte = read<uint8_t>();
                 }
             }
 
-			void readObjectTable(ObjectTable& definedTable)
+			int readObjectTable(ObjectTable& definedTable)
 			{
 				std::vector<ObjectDefinition> definitions;
 				definedTable.setIndexerSize(read<uint8_t>());
 				size_t size = read<int64_t>();
+				if( size <= 0)
+				{
+					return -1;
+				}
 				for (int i = 0; i < size; i++)
 				{
 					ObjectDefinition definition; 
 					definition.identifier = readString();
-					definition.foreignIndex = i;
+					definition.foreignIndex = i+1;
+					//std::cout << definition.identifier << ", " << i+1 << std::endl;
 					uint8_t attributeCount = read<uint8_t>();
+					if( attributeCount == 0 )
+					{
+						return -1;
+					}
 					for (int j = 0; j < attributeCount; j++)
 					{
 						ObjectAttribute attribute;
 						attribute.name = readString();
 						attribute.attribType = (BLF_TYPE)read<uint8_t>();
-						attribute.activeIndex = j;
+						attribute.activeIndex = j+1;
 						definition.attributes.push_back(attribute);
 					}
 					definitions.push_back(definition);
@@ -151,6 +174,7 @@ namespace blf
 							attribute.isForeign = true;
 							readDefinition.activeAttributeCount++;
 						}
+						//std::cout << readDefinition.foreignIndex << std::endl;
 						definedTable.insertDefinition(readDefinition);
 						continue;
 					}
@@ -159,6 +183,8 @@ namespace blf
 
 					this->processDefinitionAttributes(nativeDefinition, &definitions[i]);
 				}
+
+				return 0;
 			}
 
 			void processDefinitionAttributes(ObjectDefinition* nativeDefinition, ObjectDefinition* readDefinition)
@@ -176,7 +202,7 @@ namespace blf
 							uint64_t activeIndex = fileAttribute.activeIndex;
 							foundMatchingAttribute = true;
 							readAttribute = fileAttribute;
-							nativeAttribute.activeIndex = activeIndex+1;
+							nativeAttribute.activeIndex = activeIndex;
 							readDefinition->attributes[j].isActive = true;
 							break;
 						}
@@ -329,6 +355,7 @@ namespace blf
 
 			TemplateObject* readObject(const ObjectTable& objectTable, uint8_t commonTableIndexerSize)
 			{
+				//std::cout << objectTable.getSize() << std::endl;
 				ObjectDefinition* objectDefinition;
 
 				// The number of foreign objects that we know about, if we know the exact amount
@@ -345,8 +372,10 @@ namespace blf
 				else
 				{
 					uint64_t foreignIndex = readIndexer(objectTable.getIndexerSize());
+					//std::cout << "F" << foreignIndex << std::endl;
 					objectDefinition = objectTable.getDefinitionFromForeignIndex(foreignIndex);
-					knownForeignObjects = read<uint32_t>();
+					//knownForeignObjects = read<uint32_t>();
+					//std::cout << objectDefinition->identifier << std::endl;
 				}
 
 				if (objectDefinition == nullptr)
@@ -364,7 +393,7 @@ namespace blf
 
 				for (int i = 0; i < objectDefinition->activeAttributeCount; i++)
 				{
-					ObjectAttribute* objectAttribute;
+					ObjectAttribute* objectAttribute=nullptr;
 					if (m_loadedVersion == Version(1, 0, 0))
 					{
 						String attributeName = readString();
@@ -372,10 +401,13 @@ namespace blf
 					}
 					else
 					{
-						//uint64_t activeIndex = read<uint32_t>()+1;
-						//std::cout << activeIndex-1 << ", " << i << std::endl;
 						uint64_t activeIndex = i+1;
 						objectAttribute = getAttributeFromActiveIndex(objectDefinition, activeIndex);
+					}
+
+					if( objectAttribute == nullptr )
+					{
+						return nullptr;
 					}
 
                     void* offset = getOffsetFromPointers(objectDefinition->templatePointer, objectAttribute->offset);
@@ -384,7 +416,7 @@ namespace blf
                     readAttribute(objectAttribute, commonTableIndexerSize, location, &foreignAttributes);
                 }
 
-				readForeignAttributeTable(&foreignAttributes, objectDefinition, commonTableIndexerSize);
+				//readForeignAttributeTable(&foreignAttributes, objectDefinition, commonTableIndexerSize);
 
 				obj->storeForeignAttributes(foreignAttributes);
 

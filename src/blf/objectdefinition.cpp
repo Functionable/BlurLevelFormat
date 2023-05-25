@@ -22,9 +22,9 @@ namespace blf
 
     ObjectAttribute* getAttributeFromActiveIndex(ObjectDefinition* definition, uint64_t activeIndex)
     {
-        ObjectAttribute* attribute = &(definition->attributes[0]);
-        for (int i = 0; i < definition->attributes.size(); i++, attribute = &(definition->attributes[i]))
+        for (int i = 0; i < definition->attributes.size(); i++)
         {
+            ObjectAttribute* attribute = &(definition->attributes[i]);
             if (activeIndex == attribute->activeIndex)
             {
                 return attribute;

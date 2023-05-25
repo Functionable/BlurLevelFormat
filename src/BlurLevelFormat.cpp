@@ -13,7 +13,7 @@
 
 #include "blf.hpp"
 
-const int TEST_TILES = 100000;
+const int TEST_TILES = 10000;
 const char* BLF_TILE_NAME = "Tile";
 
 class Texture : public blf::TemplateObject
@@ -231,12 +231,14 @@ void readtest(const char* name)
 	// READING
 	blf::BLFFile readFile;
 
-	blf::ObjectTable objects = {
+	/*blf::ObjectTable objects = {
 		blf::createDefinition<Texture>(),
 		blf::createDefinition<StateTile>(),
-	};
+	};*/
+	blf::ObjectTable objects = blf::ObjectTable();
 
 	blf::readFile(name, readFile, objects);
+	std::cout << "READ: " << readFile.data.getArraySize() << std::endl;
 }
 
 /*

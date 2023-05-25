@@ -6,3 +6,4 @@ bin/
 build/
 *.blf
 *.log
+*.dmp

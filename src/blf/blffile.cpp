@@ -9,7 +9,7 @@
 
 #include <chrono>
 
-//#define BLF_DEBUG
+#define BLF_DEBUG_TIME
 
 namespace blf
 {
@@ -32,7 +32,7 @@ namespace blf
 
     void writeFile(const char* const path, const InformationHeader& header, const ObjectTable& objects, const CommonTable& common, const DataTable& data, BLF_FLAG flag)
     {
-        #ifdef BLF_DEBUG
+        #ifdef BLF_DEBUG_TIME
             auto t1 = std::chrono::high_resolution_clock::now();
         #endif
         blf::Writer writer(path, flag);
@@ -41,10 +41,13 @@ namespace blf
         writer.writeObjectTable(objects);
         writer.writeCommonTable(common, objects);
         writer.writeDataTable(data, objects, common);
-        #ifdef BLF_DEBUG
+        #ifdef BLF_DEBUG_TIME
             auto t2 = std::chrono::high_resolution_clock::now();
             auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
-            std::cout << "Write completed in: " << duration << " milliseconds." << std::endl;
+            if( hasFlag(flag, FLAG_VERBOSE))
+            {
+                std::cout << "Write completed in: " << duration << " milliseconds." << std::endl;
+            }
         #endif
 
         writer.flushToFile();
@@ -63,7 +66,7 @@ namespace blf
 
     void readFile(blf::BLFFile& file, BLF_FLAG flag)
     {
-        #ifdef BLF_DEBUG
+        #ifdef BLF_DEBUG_TIME
             auto t3 = std::chrono::high_resolution_clock::now();
         #endif
         blf::Reader levelReader(file.path, flag);
@@ -79,27 +82,33 @@ namespace blf
         {
             throw OutdatedReaderException(Version(VERSION_MAJOR, VERSION_MINOR, VERSION_FIX), Version(file.header.major, file.header.minor, file.header.fix));
         }
-
-        levelReader.readObjectTable(file.objects);
+        int retcode = levelReader.readObjectTable(file.objects);
+        if( retcode != 0 )
+        {
+            return;
+        }
         levelReader.readCommonTable(file.common, file.objects);
         file.common.buildCommonObjectArray();
 
         blf::DataTable data;
-        #ifdef BLF_DEBUG
+        #ifdef BLF_DEBUG_TIME
             auto t5 = std::chrono::high_resolution_clock::now();
         #endif
         levelReader.readDataTable(&file.data, file.objects, file.common);
-        #ifdef BLF_DEBUG
+        #ifdef BLF_DEBUG_TIME
             auto t6 = std::chrono::high_resolution_clock::now();
         #endif
         file.data.buildArray();
 
-        #ifdef BLF_DEBUG
+        #ifdef BLF_DEBUG_TIME
             auto t4 = std::chrono::high_resolution_clock::now();
             auto duration2 = std::chrono::duration_cast<std::chrono::milliseconds>(t4 - t3).count();
             auto duration3 = std::chrono::duration_cast<std::chrono::milliseconds>(t6 - t5).count();
-            std::cout << "Read completed in: " << duration2 << " milliseconds." << std::endl;
-            std::cout << "Data-Table read in: " << duration3 << " milliseconds." << std::endl;
+            if( hasFlag(flag, FLAG_VERBOSE))
+            {
+                std::cout << "Read completed in: " << duration2 << " milliseconds." << std::endl;
+                std::cout << "Data-Table read in: " << duration3 << " milliseconds." << std::endl;
+            }
         #endif
     }
 

@@ -12,7 +12,7 @@ namespace blf
 {
 	class ObjectTable
 	{
-		uint8_t m_indexerSize;
+		uint8_t m_indexerSize = 1;
 		size_t m_size;
 		ObjectDefinition** m_definitions;
 		bool m_empty = true;
@@ -24,7 +24,7 @@ namespace blf
 			m_size			= otherTable.m_size;
 			m_definitions	= new ObjectDefinition * [m_size];
 
-			for (int i = 0; i < m_size; i++)
+			for (size_t i = 0; i < m_size; i++)
 			{
 				m_definitions[i] = new ObjectDefinition();
 				(*m_definitions[i]) = (*otherTable.m_definitions[i]);
@@ -56,7 +56,7 @@ namespace blf
 			{
 				if( !m_empty )
 				{
-					for (int i = 0; i < m_size; i++)
+					for (size_t i = 0; i < m_size; i++)
 					{
 						delete m_definitions[i];
 					}
@@ -98,6 +98,9 @@ namespace blf
 				computeIndexerSize();
 			};
 
+			ObjectDefinition** begin() const { return &m_definitions[0]; }
+			ObjectDefinition** end() const { return &m_definitions[m_size]; }
+
 			/*
 			 *	Should be called after setContent was.
 			 */
@@ -112,15 +115,20 @@ namespace blf
 				m_definitions = new ObjectDefinition*[m_size];
 
 				// Copying the array over.
-				for (int i = 0; i < m_size-1; i++)
+				if( m_size > 1 )
 				{
-					(m_definitions[i]) = (oldDefinitions[i]);
+					for (size_t i = 0; i < m_size - 1; i++)
+					{
+						(m_definitions[i]) = (oldDefinitions[i]);
+					}
 				}
 
 				ObjectDefinition* defPtr = new ObjectDefinition();
 				for (ObjectAttribute attribute : definition.attributes)
 				{
 					defPtr->attributes.push_back(attribute);
+					//std::cout << attribute.activeIndex << std::endl;
+					defPtr->attributes[defPtr->attributes.size() - 1].activeIndex = attribute.activeIndex;
 				}
 				defPtr->identifier = definition.identifier;
 				defPtr->templatePointer = definition.templatePointer;
@@ -128,6 +136,7 @@ namespace blf
 				defPtr->isForeign = definition.isForeign;
 				defPtr->activeAttributeCount = definition.activeAttributeCount;
 				defPtr->arrayIndex = oldSize;
+				defPtr->foreignIndex = definition.foreignIndex;
 
 				if( oldDefinitions != nullptr )
 				{
@@ -170,9 +179,10 @@ namespace blf
 
 			ObjectDefinition* getDefinitionFromForeignIndex(int foreignIndex) const
 			{
-				ObjectDefinition* definition = m_definitions[0];
-				for (int i = 0; i < m_size; i++, definition = m_definitions[i])
+				for (size_t i = 0; i < m_size; i++)
 				{
+					ObjectDefinition* definition = m_definitions[i];
+					//std::cout << "F" << foreignIndex << "/" << definition->foreignIndex << std::endl;
 					if (foreignIndex == definition->foreignIndex)
 					{
 						return definition;
@@ -185,9 +195,10 @@ namespace blf
 
 			ObjectDefinition* getDefinitionFromIdentifier(blf::String identifier) const
 			{
-				ObjectDefinition* definition = m_definitions[0];
-				for (int i = 0; i < m_size; i++, definition = m_definitions[i])
+				for (size_t i = 0; i < m_size; i++)
 				{
+					ObjectDefinition* definition = m_definitions[i];
+					//std::cout << i << identifier << "/" << definition->identifier << std::endl;
 					if (identifier == definition->identifier)
 					{
 						return definition;

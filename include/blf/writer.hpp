@@ -172,8 +172,8 @@ namespace blf
 				//dynamicWrite(&objectName);
 				//writeString(objectName);
 				//std::cout << (int)object.getIndexerSize() << std::endl;
-				writeIndexer(objectDefinition->arrayIndex, object.getIndexerSize());
-				write((uint32_t)(obj->getForeignAttributes().getSize()));
+				writeIndexer(objectDefinition->arrayIndex+1, object.getIndexerSize());
+				//write((uint32_t)(obj->getForeignAttributes().getSize()));
 				//std::cout << objectDefinition->identifier << ": " << objectDefinition->arrayIndex << ", " << object.getSize() << " q" << (int)object.getIndexerSize() << std::endl;
 
 				for (uint32_t i = 0; i < objectDefinition->attributes.size(); i++)
@@ -203,7 +203,7 @@ namespace blf
 					}
 				}
 
-				writeForeignAttributes(obj->getForeignAttributes(), common);
+				//writeForeignAttributes(obj->getForeignAttributes(), common);
 			}
 
 			void flushToFile();
