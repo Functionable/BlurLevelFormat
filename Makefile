@@ -1,7 +1,7 @@
 # Compiler variables.
 GXX=g++
 WINDOWSGXX=g++
-CXXFLAGS=-no-pie -g -lz -O3 -s -Os
+CXXFLAGS=-no-pie -g -lz -Werror=return-type #-O3 -s -Os
 WINDOWSCXXFLAGS=-no-pie -lz -static -static-libgcc -static-libstdc++ -O3 -s -Os
 INCLUDES=./include
 LIBS=./libs
