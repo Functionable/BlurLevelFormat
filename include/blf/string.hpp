@@ -1,71 +1,56 @@
 #pragma once
 
-#include <string>
+#include <cstddef>
 #include <cstdint>
+#include <utility>
+#include <iostream>
 
 namespace blf
 {
-	typedef uint32_t StringLength;
+    class String
+    {
+        private: 
+            size_t m_length;
+            char* m_buffer;
 
-	// This is supposed to be a class that intergrates any kind of string
-	// into the BLF object format.
-	class String
-	{
-		// The internal string buffer.
-		char* m_stringBuffer;
+        public:
+            String(const char* str);
+            String(char* str) 
+                : String((const char*)str)
+            {}
 
-		// Storing both string length and buffer length
-		// for O(1) lookup times.
-		size_t m_stringSize;
-		size_t m_bufferSize;
+            String(const String& string)
+                : String(string.m_buffer)
+            {}
 
-		// Will delete the buffer once the String is deleted.
-		// Not meant for use with predefined buffers, only ones that String made.
-		bool m_shouldDelete = false;
-		bool m_deleted = false;
+            String(const std::string& string)
+                : String(string.c_str())
+            {}
 
-		// TODO: OVERLOAD OPERATORS.
+            String(String&& string)
+                : m_length(std::move(string.m_length)),
+                  m_buffer(std::move(string.m_buffer))
+            {
+                string.m_buffer = nullptr;
+            }
 
-		// Setup method for c-strings, expects a string with a null terminator.
-		// Presumes the c-string is not owned by the string.
-		void setupCString(const char* string, size_t bufferSize);
-		void copyCString(const String& otherString);
+            String& operator=(const String& other);
+            String& operator=(String&& other);
 
-		public:
+            bool operator==(const String& other) const;
+            bool operator==(const char* other) const;
+            bool operator==(const std::string& other) const;
 
-			// Operators
-			String operator+  (const String& otherString) const;
-			String operator=  (const String& otherString);
-			bool operator== (const String& otherString) const;
-			friend std::ostream& operator<<(std::ostream& ostream, String& string);
+            operator std::string() const { return std::string(m_buffer, m_length); }
 
-			operator const char*() { return getBuffer(); }
-			explicit operator std::string() { return std::string(getBuffer(), getLength()); }
+            friend std::ostream& operator<<(std::ostream& os, const String& str)
+            {
+                return os << str.m_buffer;
+            } 
 
-			String();
+            virtual ~String();
 
-			// PLEASE NOTE, THE COPY CONSTRUCTOR ALSO CREATES
-			// ITS OWN COPY OF THE STRING'S INTERNAL BUFFER.
-			// YOU ONLY HAVE TO REMOVE THE ORIGINAL BUFFER YOURSELF.
-			String(const String& string);
-
-			String(const std::string& string);
-			String(const char* stringBuffer);
-			template<size_t size>
-			String(const char(&stringBuffer)[size])
-			{
-				setupCString(stringBuffer, size);
-
-				m_shouldDelete = false;
-			}
-
-			String(const char* stringBuffer, size_t bufferLength);
-
-			~String();
-
-			// Getter methods for members.
-			size_t  getLength() const      	{ return m_stringSize; }
-			size_t  getBufferLength() const	{ return m_bufferSize; }
-			const char* getBuffer() const 	{ return m_stringBuffer; }
-	};
+            size_t getLength() const { return m_length; }
+            const char* getBuffer() const { return m_buffer; }
+    };
 }

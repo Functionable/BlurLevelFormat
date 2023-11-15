@@ -4,9 +4,9 @@
 
 namespace blf
 {
-    // Version 1.1.0
-    const int32_t VERSION_MAJOR = 1;
-    const int32_t VERSION_MINOR = 1;
+    // Version 2.0.0
+    const int32_t VERSION_MAJOR = 2;
+    const int32_t VERSION_MINOR = 0;
     const int32_t VERSION_FIX   = 0;
 
     inline const char* SIGNATURE = "BLFF";

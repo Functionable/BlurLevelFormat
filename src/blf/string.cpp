@@ -1,136 +1,61 @@
 #include "blf/string.hpp"
 
-#include <iostream>
+#include <cstdlib>
 #include <cstring>
 
 namespace blf
 {
-	void String::setupCString(const char* string, size_t bufferSize)
-	{	
-		// Assigning the char buffer, hopefully doesn't blow up.
-		m_stringBuffer = (char*)string;
+    String::String(const char* str)
+    {
+        m_length = std::strlen(str);
+        m_buffer = new char[m_length + 1];
+        std::memcpy(m_buffer, str, m_length);
+        m_buffer[m_length] = 0;
+        //m_buffer = strdup(str);
+    }
 
-		// Sizes.
-		m_stringSize = bufferSize - 1;
-		m_bufferSize = bufferSize;
-	}
+    String& String::operator=(const String& other)
+    {
+        if( this == &other ) { return *this; }
 
-	void String::copyCString(const String& otherString)
-	{
-		// Copying size data, since we aren't changing the buffer size.
-		m_stringSize = otherString.m_stringSize;
-		m_bufferSize = otherString.m_bufferSize;
+        m_length = other.m_length;
+        char* buffer = new char[m_length + 1];
+        std::memcpy(buffer, other.m_buffer, m_length);
+        buffer[m_length] = 0;
 
-		// Copying the buffer.
-		m_stringBuffer = new char[m_bufferSize];
+        delete[] m_buffer;
 
-		memcpy(m_stringBuffer, otherString.m_stringBuffer, m_bufferSize);
+        m_buffer = buffer;
 
-		m_stringBuffer[m_stringSize] = '\0';
+        return *this;
+    }
 
-		// Since we duplicated the string buffer, we have to delete.
-		m_shouldDelete = true;
-	}
+    String& String::operator=(String&& other)
+    {
+        std::swap(m_buffer, other.m_buffer);
+        std::swap(m_length, other.m_length);
 
-	String String::operator+(const String& otherString) const
-	{
-		return String();
-	}
+        return *this;
+    }
 
-	String String::operator=(const String& otherString)
-	{
-		copyCString(otherString);
+    bool String::operator==(const String& other) const
+    {
+        return strcmp(m_buffer, other.m_buffer) == 0;
+    }
 
-		return *this;
-	}
+    bool String::operator==(const char* other) const
+    {
+        return strcmp(m_buffer, other) == 0;
+    }
 
-	bool String::operator==(const String& otherString) const
-	{
-		//bool isNullptr = otherString == nullptr;
-		if (otherString.m_stringSize != this->m_stringSize)
-		{
-			return false;
-		}
-		if (otherString.m_stringBuffer == this->m_stringBuffer)
-		{
-			return true;
-		}
-		if (strcmp(this->m_stringBuffer, otherString.m_stringBuffer) == 0)
-		{
-			return true;
-		}
-		return false;
-	}
+    bool String::operator==(const std::string& other) const
+    {
+        return (std::string)*this == other;
+    }
 
-	std::ostream& operator<<(std::ostream& ostream, String& string)
-	{
-		ostream << (const char*)string.m_stringBuffer;
-		return ostream;
-	}
-
-	// CONSTRUCTOR METHODS.
-
-	String::String()
-	{
-		m_stringBuffer = nullptr;
-		m_shouldDelete = false;
-		m_bufferSize = 0;
-		m_stringSize = 0;
-	}
-
-	String::String(const String& string)
-	{
-		copyCString(string);
-	}
-
-	String::String(const std::string& string)
-	{
-		// Setting sizes for fast lookup times.
-		m_bufferSize = string.length() + 1;
-		m_stringSize = m_bufferSize - 1;
-
-		// Allocating a new buffer to store the string's text.
-		// Cannot trust the string's internal buffer, as then we are at mercy
-		// of the string's lifetime.
-		m_stringBuffer = new char[m_bufferSize];
-
-		// Copying text to the buffer.
-		memcpy((char*)m_stringBuffer, string.c_str(), m_stringSize);
-		m_stringBuffer[m_stringSize] = '\0';
-
-		// Adding a null terminator.
-		//m_stringBuffer[m_stringSize] = '\0';
-
-		// Marking it for deletion when this object's lifetime runs out.
-		// Because we allocated a new char buffer.
-		m_shouldDelete = true;
-	}
-
-	String::String(const char* stringBuffer)
-	{
-		setupCString(stringBuffer, strlen(stringBuffer) + 1);
-
-		// Not our buffer.
-		m_shouldDelete = false;
-	}
-
-	String::String(const char* stringBuffer, size_t bufferLength)
-	{
-		setupCString(stringBuffer, bufferLength);
-
-		// Not our buffer.
-		m_shouldDelete = false;
-	}
-
-	// The simple yet very crucial destructor.
-	String::~String()
-	{
-		// Checking if the string marked itself for deletion.
-		if (m_shouldDelete)
-		{
-			// Cleaning up the string's own mess.
-			delete[] m_stringBuffer;
-			m_deleted = true;
-		}
-	}
+    String::~String()
+    {
+        //free(m_buffer);
+        delete[] m_buffer;
+    }
 }
