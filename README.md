@@ -10,7 +10,7 @@ Backwards compatibility is (at the moment) planned to be maintained between BLF 
 
 Unfortunately, BLF 2.0 is currently __**in very early stages and has not reached a usable state**__. As of now, only basic (de)serialization functionality has been added. Out of the three tables, only the ObjectTable has been implemented in any way, and even then not fully.
 
-## Planned structual changes
+## Planned structural changes
 - Tables will have local/foreign variants instead of objects. This should make the resolution of definition conflicts easier and less error prone.
     - When writing, the user of the library will be required to instantiate a blf::LocalObjectTable and when reading from a file, a blf::ForeignTable instead (the exception to this is a blf::LocalObjectTable which is required to be initialized when reading as it provides useful information on how objects should be instantiated and how data should be applied to an instance of an object).
 - (As mentioned before) the process of writing a definition no longer will require for blf-specific code to be put within a class. Instead, this code may be put in a read method alongside the defintion of a blf::LocalObjectTable.
@@ -44,5 +44,5 @@ Additional Features (nice to haves for BLF 2.0)
 - [ ] Implement an Array datatype (Would allow to specify whether it is restricted to a single type).
 - [ ] Implement a Dictionary datatype (Would allow to specify whether it is restricted to a single key/value type).
 - [ ] Implement flags in the InformationHeader. 
-    - [ ] Allow any basic type to be used within a header. Due to the fact that the InformationHeader will not be compressed while the rest of the file may be, there must be a mechanism preventing an object used within a flag.
+    - [ ] Allow any basic type to be used within a header. Due to the fact that the InformationHeader will not be compressed while the rest of the file may be, there must be a mechanism preventing an object being used within a flag.
     - [ ] Implement compression status as a flag.
