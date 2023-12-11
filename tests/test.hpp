@@ -1,8 +1,11 @@
 #pragma once
 
+#include "test_memory.hpp"
+
 #include <chrono>
 #include <string>
 #include <iostream>
+#include <exception>
 
 // Helper library for tests.
 
@@ -12,7 +15,19 @@ inline const char* successString(bool isSuccessful) { return isSuccessful ? "PAS
 
 int main()
 {
-    return successStatus(test());
+    bool status = successStatus(test());
+
+    //std::cout << "HEAP SIZE: " << std::to_string(heapSize()) << " byes";
+
+    if( heapSize() != 0 )
+    {
+        std::cout << "FAILURE: Potential memory leak, heap is " << heapSize() <<
+            " bytes bigger" << std::endl;
+
+        return 1;
+    }
+
+    return status;
 }
 
 class TinyProfiler

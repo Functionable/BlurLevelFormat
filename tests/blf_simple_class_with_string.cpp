@@ -16,6 +16,8 @@ class Foo
             : s_1(s1), s_2(s2), s_3(s3)
         {}
 
+        ~Foo() = default;
+
         bool operator==(const Foo& other) const
         {
             return s_1 == other.s_1 && 
@@ -56,18 +58,20 @@ bool testDeserialization(blf::LocalObjectTable& localTable, blf::LocalObjectDefi
     std::cout << "Test data: \n";
     value.print();
 
+    blf::SerializationContext ctx = {blf::CommonTable::empty()};
+
     std::cout << "CASE 1: blf::LocalObjectDefinition::deserialize()\n";
-    definition.deserialize(&temp, databuf);
+    definition.deserialize(ctx, &temp, databuf);
     bool success1 = !checkMismatch(value, temp);
     std::cout << "CASE 1 RESULT: " << successString(success1) << "\n\n";
 
     std::cout << "CASE 2: blf::LocalObjectTable::fromData(Definition, void*)\n";
-    Foo* newInstance = (Foo*)localTable.fromData(definition, databuf);
+    Foo* newInstance = (Foo*)localTable.fromData(ctx, definition, databuf);
     bool success2 = !checkMismatch(*newInstance, temp);
     std::cout << "CASE 2 RESULT: " << successString(success2) << "\n\n";
 
     std::cout << "CASE 3: blf::LocalObjectTable::fromData(std::string, void*)\n";
-    Foo* newInstance2 = (Foo*)localTable.fromData(definition, databuf);
+    Foo* newInstance2 = (Foo*)localTable.fromData(ctx, definition, databuf);
     bool success3 = !checkMismatch(*newInstance, temp);
     std::cout << "CASE 3 RESULT: " << successString(success3) << "\n\n";
 
@@ -92,13 +96,15 @@ bool test()
         blf::arg("s_3", &Foo::s_3)
     );
 
-    fooDefinition.serialize(&f1, dataBuf);
+    blf::SerializationContext ctx = {blf::CommonTable::empty()};
+
+    fooDefinition.serialize(ctx, &f1, dataBuf);
     successful &= testDeserialization(localObjectTable, fooDefinition, f1, dataBuf);
 
-    fooDefinition.serialize(&f2, dataBuf);
+    fooDefinition.serialize(ctx, &f2, dataBuf);
     successful &= testDeserialization(localObjectTable, fooDefinition, f2, dataBuf);
 
-    fooDefinition.serialize(&theDefault, dataBuf);
+    fooDefinition.serialize(ctx, &theDefault, dataBuf);
     successful &= testDeserialization(localObjectTable, fooDefinition, theDefault, dataBuf);
 
     return successful;

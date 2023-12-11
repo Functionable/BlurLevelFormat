@@ -12,12 +12,12 @@ namespace blf
                 : ObjectAttribute(name, type)
             {}
 
-            virtual ~ClassObjectAttribute() {}
+            virtual ~ClassObjectAttribute() override = default;
 
-            virtual void deserialize(Class* instance, const char* sourceData) const = 0;
-            virtual size_t measureSpan(const char* data) const = 0;
+            virtual void deserialize(SerializationContext& ctx, Class* instance, const char* sourceData) const = 0;
+            virtual size_t measureSpan(SerializationContext& ctx, const char* data) const = 0;
             
-            virtual void serialize(const Class* instance, char* destinationData) const = 0;
-            virtual size_t calculateSpan(const Class* instance) const = 0;
+            virtual void serialize(SerializationContext& ctx, const Class* instance, char* destinationData) const = 0;
+            virtual size_t calculateSpan(SerializationContext& ctx, const Class* instance) const = 0;
     };
 }

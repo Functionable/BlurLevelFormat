@@ -4,6 +4,7 @@
 #include "classobjectattribute.hpp"
 
 #include "../serialization/dataconversion.hpp"
+#include "../serialization/serializationcontext.hpp"
 
 namespace blf
 {
@@ -19,25 +20,15 @@ namespace blf
                 : m_attributes(attributes), ObjectDefinition(name)
             {}
 
-            /*size_t getSize() const override
-            {
-                size_t size = 0;
-                for( const ClassObjectAttribute<T>* attribute : m_attributes )
-                {
-                    size += attribute->getSize();
-                }
+            ~LocalObjectDefinition() override = default; 
 
-                return size;
-            }*/
-
-            void deserialize(T* instance, const char* data) const
+            void deserialize(SerializationContext& ctx, T* instance, const char* data) const
             {
                 const char* head = data;
                 for( ClassObjectAttribute<T>* attribute : m_attributes )
                 {
-                    attribute->deserialize(instance, head);
-                    //head += attribute->getSize();
-                    head += attribute->measureSpan(head);
+                    attribute->deserialize(ctx, instance, head);
+                    head += attribute->measureSpan(ctx, head);
                 }
             }
 
@@ -46,43 +37,54 @@ namespace blf
              * object is located at the beginning, the size of the object in
              * bytes will be measured.
              */
-            size_t measureDataSpan(const char* data) const
+            size_t measureSpan(SerializationContext& ctx, const char* data) const override
             {
                 size_t size = 0;
                 for( ClassObjectAttribute<T>* attribute : m_attributes )
                 {
-                    size += attribute->measureSpan(data + size);
+                    size += attribute->measureSpan(ctx, data + size);
                 }
                 return size;
             }
 
-            void deserialize(void* instance, const char* data) const override
+            void deserialize(SerializationContext& ctx, char* instance, const char* data) const override
             {
-                return deserialize((T*)instance, data);
+                return deserialize(ctx, (T*)instance, data);
             }
 
-            void serialize(const T* instance, char* data) const
+            void serialize(SerializationContext& ctx, const T* instance, char* data) const
             {
                 char* head = data;
                 for( ClassObjectAttribute<T>* attribute : m_attributes )
                 {
-                    attribute->serialize(instance, head);
-                    head += attribute->calculateSpan(instance);
+                    attribute->serialize(ctx, instance, head);
+                    head += attribute->calculateSpan(ctx, instance);
                 }
+            }
+
+            void serialize(SerializationContext& ctx, const char* data, char* destination) const override
+            {
+                serialize(ctx, (T*)data, destination);
             }
 
             /**
              * Calculates the number of bytes the given object will span when
              * serialized as bytes.
              */
-            size_t calculateDataSpan(const T* instance) const
+            size_t calculateDataSpan(SerializationContext& ctx, const T* instance) const
             {
                 size_t size = 0;
                 for( ClassObjectAttribute<T>* attribute : m_attributes )
                 {
-                    size += attribute->calculateSpan(instance);
+                    size += attribute->calculateSpan(ctx, instance);
                 }
                 return size;
+            }
+
+
+            size_t calculateSpan(SerializationContext& ctx, const char* instance) const override
+            {
+                return calculateDataSpan(ctx, (const T*)instance);
             }
     };
 }

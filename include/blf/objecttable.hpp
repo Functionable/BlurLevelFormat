@@ -9,54 +9,60 @@
 
 namespace blf
 {
-    //template<typename T>
-    using BakedObjectTable = UnbakedList<ObjectDefinition>::BakedList;
+    class ObjectTable;
 
-    //template<typename T>
-    using ObjectTable = UnbakedList<ObjectDefinition>;
-
-    /*class BakedObjectTable : private BakedList<ObjectDefinition>
-    {
-        private:
-            using List = UnbakedList<ObjectDefinition>::BakedList;
-
-        public:
-            BakedObjectTable(const List& list) 
-                : List(list)
-            {}
-
-            using List::get;
-            using List::begin;
-            using List::end;
-    };
-
-    class ObjectTable : private UnbakedList<ObjectDefinition>
+    /**
+     * A dynamic list meant to store ObjectDefinitions.
+     * Can be 'baked' into an ObjectTable.
+     */
+    class UnbakedObjectTable : public UnbakedList<ObjectDefinition*>
     {   
         private:
-            using List = UnbakedList<ObjectDefinition>;
+            using List = UnbakedList<ObjectDefinition*>;
         public:
-            ObjectTable() : List()
+            UnbakedObjectTable() : List()
             {}
 
-            ObjectTable(const ObjectTable& table) 
+            UnbakedObjectTable(const UnbakedObjectTable& table) 
                 : List(table)
             {}
 
-            ObjectTable(const std::initializer_list<ObjectDefinition>& initializerList) 
+            UnbakedObjectTable(const std::initializer_list<ObjectDefinition*>& initializerList) 
                 : List(initializerList)
             {}
 
-            using List::add;
-            using List::emplace;
-            using List::get;
+            /**
+             * Bakes the UnbakedObjectTable into a static list.
+             */
+            ObjectTable bake();
+    };
 
-            BakedObjectTable bake()
+
+    class ObjectTable : public UnbakedList<ObjectDefinition*>::BakedList
+    {
+        private:
+            void validateTable();
+
+        public:
+
+            /**
+             * Takes an UnbakedObjectTable and bakes it into
+             * a baked object table.
+             *
+             * Will throw std::invalid_argument if the UnbakedObjectTable
+             * contained a definition with name equal to NULL_OBJECT_NAME.
+             */
+            ObjectTable(const UnbakedObjectTable& table)
+                : UnbakedList<ObjectDefinition*>::BakedList(table)
             {
-                return BakedObjectTable(*this); 
+                validateTable();
             }
 
-            using List::size;
-            using List::begin;
-            using List::end;
-    };*/
+            /**
+             * Returns the first ObjectDefinition with the given name.
+             *
+             * Throws std::out_of_range if the name cannot be found.
+             */
+            ObjectDefinition& findDefinition(const std::string& name) const;
+    };
 }

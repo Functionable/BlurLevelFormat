@@ -21,7 +21,7 @@ namespace blf
             {}
 
             UnbakedList(const UnbakedList& list)
-                : UnbakedList(list.vector)
+                : UnbakedList(list.m_vector)
             {}
 
             UnbakedList(const std::vector<T>& vector)
@@ -40,7 +40,14 @@ namespace blf
                     size_t m_size;
                     T* m_list;
 
+                    BakedList()
+                        : m_size(0),
+                          m_list(nullptr)
+                    {}
+
                 public:
+                    static BakedList empty() { return BakedList(); }
+
                     BakedList(const UnbakedList<T>& unbakedList)
                         : m_size(unbakedList.size())
                     {

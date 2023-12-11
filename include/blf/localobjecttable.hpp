@@ -9,10 +9,12 @@
 #include "object/attributelocation.hpp"
 #include "object/localobjectdefinition.hpp"
 #include "object/specializedclassobjectattribute.hpp"
+#include "serialization/serializationcontext.hpp"
 
 #include <map>
 #include <string>
 #include <stdexcept>
+#include <type_traits>
 
 namespace blf
 {
@@ -35,6 +37,15 @@ namespace blf
         static void* function()
         {
             return new T();
+        }
+    };
+
+    template<typename T>
+    struct DefaultDestructor
+    {
+        static void function(void* ptr)
+        {
+            delete ((T*)ptr);
         }
     };
 
@@ -80,12 +91,27 @@ namespace blf
         return {name, type, {getter, setter}};
     }
 
-        template<typename C, typename T, typename = std::enable_if_t<is_class_v<T>>>
-    NamedClassArgument<C, T, ConstAccessorAttributeLocation<C, T>, ObjectAttributeProcedure<C, T>> arg(
-        const std::string& name,  T (C::*getter)() const, void (C::*setter)(T), 
+    // OVERLOADS OF ARG FOR ACCESSOR FUNCTIONS.
+    template<typename C, typename T, typename = std::enable_if_t<!is_class_v<T>>>
+    NamedClassArgument<C, T, ConstAccessorAttributeLocation<C,const T&>, GenericAttributeProcedure<C, T>> arg(
+        const std::string& name, const T& (C::*getter)() const, void (C::*setter)(const T&) )
+    {
+        const BLF_TYPE type = infer_v<std::decay_t<T>>;
+
+        return {name, type, {getter, setter}};
+    }
+
+    template<typename C, typename T, typename Tg, typename Ts, typename = std::enable_if_t<is_class_v<T>>>
+    NamedClassArgument<C, T, ConstAccessorAttributeLocation<C, Tg, Ts>, ObjectAttributeProcedure<C, T>> arg(
+        const std::string& name,  Tg (C::*getter)() const, void (C::*setter)(Ts), 
         const LocalObjectDefinition<T>& definition)
     {
-        return {name, TYPE_OBJECT, {getter, setter}, &definition};
+        static_assert(std::is_same_v<T, std::decay_t<std::remove_pointer_t<Tg>>>, "The return type of the getter method must be the same as the argument type.");
+        static_assert(std::is_same_v<T, std::decay_t<std::remove_pointer_t<Ts>>>, "The parameter of the setter method must be the same as the argument type.");
+
+        const BLF_TYPE type = infer_v<std::decay_t<T>>;
+
+        return {name, type, {getter, setter}, &definition};
     }
 
     class LocalObjectTable
@@ -94,6 +120,8 @@ namespace blf
             std::vector<ObjectAttribute*> m_attributeStore;
             std::vector<ObjectDefinition*> m_definitionStore;
             std::map<std::string, void*(*)()> m_constructors;
+            std::map<std::string, void(*)(void*)> m_destructors;
+            std::vector<std::pair<void*, void(*)(void*)>> m_destructionPairs;
             std::vector<void*> m_createdObjects;
 
             template<typename Class, typename T, typename A, typename P>
@@ -159,9 +187,10 @@ namespace blf
                 {
                     delete definitionPtr;
                 }
-                for( void* object : m_createdObjects )
+                for( std::pair<void*, void(*)(void*)> destructionPair : m_destructionPairs)
                 {
-                    delete (char*)object;
+                    //delete (char*)object;
+                    destructionPair.second(destructionPair.first);
                 }
             }
 
@@ -175,35 +204,53 @@ namespace blf
                 m_definitionStore.push_back(objectDefinition);
 
                 m_constructors.insert({name, &DefaultConstructor<Class>::function});
+                m_destructors.insert({name, &DefaultDestructor<Class>::function});
 
                 return *objectDefinition;
             }
 
             template<typename Class>
-            void* fromData(const LocalObjectDefinition<Class>& definition, const char* data)
+            void* fromData(SerializationContext& ctx, const LocalObjectDefinition<Class>& definition, const char* data)
             {
                 void* (*constructor)() = m_constructors.at(definition.getName());
+                void (*destructor)(void*) = m_destructors.at(definition.getName());
 
                 void* initd = constructor();
 
                 m_createdObjects.push_back(initd);
+                m_destructionPairs.push_back({initd, destructor});
 
-                definition.deserialize(initd, data);
+                definition.deserialize(ctx, (char*)initd, data);
 
                 return initd;
             }
 
-            void* fromData(const std::string& name, const char* data)
+            void* fromData(SerializationContext& ctx, const std::string& name, const char* data)
             {
                 void* (*constructor)() = m_constructors.at(name);
+                void (*destructor)(void*) = m_destructors.at(name);
 
                 void* initd = constructor();
 
                 m_createdObjects.push_back(initd);
+                m_destructionPairs.push_back({initd, destructor});
 
-                findDefinition(name)->deserialize(initd, data);
+                findDefinition(name)->deserialize(ctx, (char*)initd, data);
 
                 return initd;
+            }
+
+            ObjectDefinition* getDefinition(const std::string& name) const
+            {
+                for( ObjectDefinition* definition : m_definitionStore)
+                {
+                    if( definition->getName() == name )
+                    {
+                        return definition;
+                    }
+                }
+
+                throw std::out_of_range("Given definition name not found in blf::LocalObjectTable")
             }
     };
 }

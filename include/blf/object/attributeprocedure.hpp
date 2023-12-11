@@ -2,6 +2,8 @@
 
 #include "classobjectattribute.hpp"
 #include "localobjectdefinition.hpp"
+
+#include "../commontable.hpp"
 #include "../serialization/dataconversion.hpp"
 
 #include <type_traits>
@@ -13,24 +15,24 @@ namespace blf
     {
         struct Store
         {
-            inline constexpr void deserialize(T* instance, const char* data) const
+            inline constexpr void deserialize(SerializationContext& ctx, T* instance, const char* data) const
             {
-                blf::deserialize(instance, data);
+                blf::deserialize(ctx, instance, data);
             }
 
-            inline constexpr void serialize(const T* objectInstance, char* destinationData) const
+            inline constexpr void serialize(SerializationContext& ctx, const T* objectInstance, char* destinationData) const
             {
-                blf::serialize(objectInstance, destinationData);
+                blf::serialize(ctx, objectInstance, destinationData);
             }
 
-            inline constexpr size_t measureSpan(const char* data) const
+            inline constexpr size_t measureSpan(SerializationContext& ctx, const char* data) const
             {
-                return blf::measureData<T>(data);
+                return blf::measureData<T>(ctx, data);
             }
             
-            inline constexpr size_t calculateSpan(const T* object) const
+            inline constexpr size_t calculateSpan(SerializationContext& ctx, const T* object) const
             {
-                return blf::measure(object);
+                return blf::measure(ctx, object);
             }
         };
     };
@@ -40,27 +42,65 @@ namespace blf
     {
         struct Store
         {
-            const LocalObjectDefinition<T>* definition;
+            const LocalObjectDefinition<std::decay_t<T>>* definition;
 
-            inline constexpr void deserialize(T* instance, const char* data) const
+            inline constexpr void deserialize(SerializationContext& ctx, T* instance, const char* data) const
             {
-                definition->deserialize(instance, data);
+                definition->deserialize(ctx, instance, data);
             }
 
-            inline constexpr void serialize(const T* objectInstance, char* destinationData) const
+            inline constexpr void serialize(SerializationContext& ctx, const T* objectInstance, char* destinationData) const
             {
-                definition->serialize(objectInstance, destinationData);
+                definition->serialize(ctx, objectInstance, destinationData);
             }
 
-            inline constexpr size_t measureSpan(const char* data) const
+            inline constexpr size_t measureSpan(SerializationContext& ctx, const char* data) const
             {
-                return definition->measureDataSpan(data);
+                return definition->measureSpan(ctx, data);
             }
             
-            inline constexpr size_t calculateSpan(const T* object) const
+            inline constexpr size_t calculateSpan(SerializationContext& ctx, const T* object) const
             {
-                return definition->calculateDataSpan(object);
+                return definition->calculateDataSpan(ctx, object);
             }
+        };
+    };
+
+    template<typename Class, typename T>
+    struct ReferenceAttributeProcedure
+    {
+        struct Store
+        {
+            const LocalObjectDefinition<T>* definition;
+
+            inline constexpr void deserialize(SerializationContext& ctx, T* instance, const char* data) const
+            {
+                definition->deserialize(ctx, instance, data);
+            }
+
+            inline constexpr void serialize(SerializationContext& ctx, const T* objectInstance, char* destinationData) const
+            {
+                definition->serialize(ctx, objectInstance, destinationData);
+            }
+
+            inline constexpr size_t measureSpan(SerializationContext& ctx, const char* data) const
+            {
+                return definition->measureSpan(ctx, data);
+            }
+            
+            inline constexpr size_t calculateSpan(SerializationContext& ctx, const T* object) const
+            {
+                return definition->calculateDataSpan(ctx, object);
+            }
+        };
+    };
+
+    template<typename T>
+    struct CommonAttributeProcedure
+    {
+        struct Store
+        {
+            CommonTable* table;
         };
     };
 
@@ -72,6 +112,9 @@ namespace blf
 
     template<typename Class, typename T>
     struct is_attribute_procedure<ObjectAttributeProcedure<Class, T>> : std::true_type {};
+
+    template<typename Class, typename T>
+    struct is_attribute_procedure<ReferenceAttributeProcedure<Class, T>> : std::true_type {};
 
     template<typename T>
     inline constexpr bool is_attribute_procedure_v = is_attribute_procedure<T>::value;

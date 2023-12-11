@@ -1,9 +1,8 @@
 #pragma once
 
-#include "objectattribute.hpp"
-
 #include "../string.hpp"
-#include "../bakedlist.hpp"
+
+#include "../serialization/serializationcontext.hpp"
 
 #include <cstddef>
 
@@ -19,20 +18,13 @@ namespace blf
                 : m_name(name)
             {}
 
-            virtual ~ObjectDefinition() {}
+            virtual ~ObjectDefinition() = default;
 
             const String& getName() const { return m_name; }
 
-            virtual void deserialize(void* instance, const char* data) const
-            {
-                
-            }
-
-            /**
-             * Returns DYNAMIC_TYPE if the size can change, whether it is because of
-             * the inclusion of a String type or another object within.
-             */
-            // TODO: probably fully remove? seems useless now that calculateSpan is a thing.
-            //virtual size_t getSize() const = 0;
+            virtual void deserialize(SerializationContext& ctx, char* instance, const char* data) const = 0;
+            virtual void serialize(SerializationContext& ctx, const char* data, char* destination) const = 0;
+            virtual size_t measureSpan(SerializationContext& ctx, const char* data) const = 0;
+            virtual size_t calculateSpan(SerializationContext& ctx, const char* instance) const = 0;
     };
 }

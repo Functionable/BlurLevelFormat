@@ -47,10 +47,12 @@ $(TEST_BINARY_DIR):
 
 $(TEST_BINARY_DIR)/%.a: $(TEST_OBJECTS_DIR)/%.o
 	@echo -e "$(no_color)Running test '$(yellow)$@$(no_color)'..."
-	@$(GXX) $(CXXFLAGS) $< $(LIB_OBJECTS) $(INCLUDES) -o $@
+	@$(GXX) $(CXXFLAGS) $< $(TEST_OBJECTS_DIR)/test.o $(LIB_OBJECTS) $(INCLUDES) -o $@
 	@echo $@: >> test.log
 	@$@ >> test.log && echo -e $@ $(PASS_DIALOG) || { echo -e $@ $(FAIL_DIALOG); exit 1; }
 	@echo TEST END >> test.log
+
+$(TEST_BINARY_DIR)/test.a: ;
 
 $(TEST_OBJECTS_DIR)/%.o: $(TEST_DIR)/%.cpp
 	@echo -e "$(no_color)Building test '$(yellow)$@$(no_color)'..."

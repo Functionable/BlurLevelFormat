@@ -80,22 +80,22 @@ namespace blf
         };
     };
 
-    template<typename Class, typename T>
+    template<typename Class, typename Tg, typename Ts = Tg>
     struct ConstAccessorAttributeLocation
     {
         inline static constexpr bool forceCopy = true;
 
         struct Store
         {
-            T(Class::*getterPointer)() const;
-            void(Class::*setterPointer)(T);
+            Tg(Class::*getterPointer)() const;
+            void(Class::*setterPointer)(Ts);
 
-            inline constexpr T get(const Class* classPtr) const
+            inline constexpr Tg get(const Class* classPtr) const
             {
                 return (classPtr->*getterPointer)();
             }
 
-            inline void set(Class* classPtr, const T& value) const
+            inline void set(Class* classPtr, Ts value) const
             {
                 (classPtr->*setterPointer)(value);
             }

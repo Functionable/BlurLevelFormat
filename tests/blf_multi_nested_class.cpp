@@ -142,16 +142,17 @@ bool test()
 
     GameState aState;
     GameState blankState = makeblank();
+    blf::SerializationContext ctx = {blf::CommonTable::empty()};
     assert(aState != blankState);
 
     {
         PROFILE_SCOPE("Compound definition serialization");
-        definition.serialize(&aState, databuf);
+        definition.serialize(ctx, &aState, databuf);
     }
 
     {
         PROFILE_SCOPE("Compound definition deserialization");
-        definition.deserialize(&blankState, databuf);
+        definition.deserialize(ctx, &blankState, databuf);
     }
 
     if( aState != blankState )

@@ -1,6 +1,9 @@
 #pragma once
 
+#include "objectattribute.hpp"
 #include "objectdefinition.hpp"
+
+#include "../bakedlist.hpp"
 
 namespace blf
 {
@@ -15,16 +18,12 @@ namespace blf
                 : m_attributes(attributes), ObjectDefinition(name)
             {}
 
-            // TODO: this method.
-            /*size_t getSize() const
-            {
-                size_t size = 0;
-                for( const ObjectAttribute& attribute : m_attributes )
-                {
-                    size += attribute.getSize();
-                }
+            ~ForeignObjectDefinition() override = default;
 
-                return size;
-            }*/
+            void deserialize(SerializationContext& ctx, char* instance, const char* data) const override;
+            void serialize(SerializationContext& ctx, const char* data, char* destination) const override;
+
+            virtual size_t measureSpan(SerializationContext& ctx, const char* data) const override;
+            virtual size_t calculateSpan(SerializationContext& ctx, const char* instance) const override;
     };
 }

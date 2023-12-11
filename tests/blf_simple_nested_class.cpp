@@ -66,10 +66,12 @@ bool performTest(char* databuf, GameObject& object, blf::LocalObjectDefinition<G
     std::cout << "Test case: \n";
     object.print();
 
-    objectDefinition.serialize(&object, databuf);
+    blf::SerializationContext ctx = {blf::CommonTable::empty()};
 
-    const size_t measuredSpan = objectDefinition.measureDataSpan(databuf);
-    const size_t calculatedSpan = objectDefinition.calculateDataSpan(&object);
+    objectDefinition.serialize(ctx, &object, databuf);
+
+    const size_t measuredSpan = objectDefinition.measureSpan(ctx, databuf);
+    const size_t calculatedSpan = objectDefinition.calculateDataSpan(ctx, &object);
 
     if( measuredSpan != calculatedSpan )
     {
@@ -82,7 +84,7 @@ bool performTest(char* databuf, GameObject& object, blf::LocalObjectDefinition<G
         std::cout << "Data length: OK" << std::endl;
     }
 
-    objectDefinition.deserialize(&defaultObj, databuf);
+    objectDefinition.deserialize(ctx, &defaultObj, databuf);
     if( defaultObj != object )
     {
         std::cout << "Object was not the same after deserialization.\nOriginal:\n";
@@ -98,7 +100,7 @@ bool performTest(char* databuf, GameObject& object, blf::LocalObjectDefinition<G
     }
 
 
-    GameObject* init1 = (GameObject*)table.fromData<GameObject>(objectDefinition, databuf);
+    GameObject* init1 = (GameObject*)table.fromData<GameObject>(ctx, objectDefinition, databuf);
 
     if( *init1 != object )
     {
