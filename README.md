@@ -39,6 +39,7 @@ These things have to be done to achieve BLF feature parity.
 - [ ] Implement compression.
 
 Additional Features (nice to haves for BLF 2.0)
+- [ ] Checking for and accounting for endianness
 - [x] Allow for an ObjectAttribute to pull data through getters/setters
 - [ ] Allow for an ObjectAttribute to pull data from an object through an std::function.
 - [ ] Implement an Array datatype (Would allow to specify whether it is restricted to a single type).
