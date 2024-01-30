@@ -46,9 +46,9 @@ namespace blf
                 }
             }
 
-            size_t measureSpan(SerializationContext& ctx, const char* data) const override
+            size_t dataLength(SerializationContext& ctx, const char* data) const override
             {
-                return m_procedureStore.measureSpan(ctx, data);
+                return m_procedureStore.dataLength(ctx, data);
             }
 
             void serialize(SerializationContext& ctx, const Class* instance, char* destinationData) const override
@@ -65,17 +65,17 @@ namespace blf
                 }
             }
 
-            size_t calculateSpan(SerializationContext& ctx, const Class* instance) const override
+            size_t serializedLength(SerializationContext& ctx, const Class* instance) const override
             {
                 if constexpr ( !AttributeLocation::forceCopy )
                 {
                     const T* objectInstance = m_locationStore.ptr(instance);
-                    return m_procedureStore.calculateSpan(ctx, objectInstance);
+                    return m_procedureStore.serializedLength(ctx, objectInstance);
                 }
                 else 
                 {
                     auto objectInstance = m_locationStore.get(instance);
-                    return m_procedureStore.calculateSpan(ctx, &objectInstance);
+                    return m_procedureStore.serializedLength(ctx, &objectInstance);
                 }
             }
     };

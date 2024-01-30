@@ -4,6 +4,7 @@
 #include "unbakedlist.hpp"
 
 #include "object/objectdefinition.hpp"
+#include "object/foreignobjectdefinition.hpp"
 
 #include <initializer_list>
 
@@ -15,10 +16,10 @@ namespace blf
      * A dynamic list meant to store ObjectDefinitions.
      * Can be 'baked' into an ObjectTable.
      */
-    class UnbakedObjectTable : public UnbakedList<ObjectDefinition*>
+    class UnbakedObjectTable : public UnbakedList<ForeignObjectDefinition>
     {   
         private:
-            using List = UnbakedList<ObjectDefinition*>;
+            using List = UnbakedList<ForeignObjectDefinition>;
         public:
             UnbakedObjectTable() : List()
             {}
@@ -27,7 +28,7 @@ namespace blf
                 : List(table)
             {}
 
-            UnbakedObjectTable(const std::initializer_list<ObjectDefinition*>& initializerList) 
+            UnbakedObjectTable(const std::initializer_list<ForeignObjectDefinition>& initializerList) 
                 : List(initializerList)
             {}
 
@@ -38,7 +39,7 @@ namespace blf
     };
 
 
-    class ObjectTable : public UnbakedList<ObjectDefinition*>::BakedList
+    class ObjectTable : public UnbakedList<ForeignObjectDefinition>::BakedList
     {
         private:
             void validateTable();
@@ -53,7 +54,7 @@ namespace blf
              * contained a definition with name equal to NULL_OBJECT_NAME.
              */
             ObjectTable(const UnbakedObjectTable& table)
-                : UnbakedList<ObjectDefinition*>::BakedList(table)
+                : UnbakedList<ForeignObjectDefinition>::BakedList(table)
             {
                 validateTable();
             }
@@ -63,6 +64,6 @@ namespace blf
              *
              * Throws std::out_of_range if the name cannot be found.
              */
-            ObjectDefinition& findDefinition(const std::string& name) const;
+            const ForeignObjectDefinition& findDefinition(const std::string& name) const;
     };
 }

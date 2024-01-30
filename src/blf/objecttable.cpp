@@ -13,23 +13,26 @@ namespace blf
 
     void ObjectTable::validateTable()
     {
-        for( ObjectDefinition* definition : *this )
+        for( ForeignObjectDefinition definition : *this )
         {
-            if( definition->getName() == NULL_OBJECT_NAME )
+            if( definition.getName() == NULL_OBJECT_NAME )
             {
                 throw std::invalid_argument("Invalid definition (with null name) in ObjectTable.");
             }
         }
     }
 
-    ObjectDefinition& ObjectTable::findDefinition(const std::string& name) const
+    const ForeignObjectDefinition& ObjectTable::findDefinition(const std::string& name) const
     {
-        for( ObjectDefinition* definition : *this )
+        // TODO: clean this up
+        size_t i = 0;
+        for( const ForeignObjectDefinition& definition : *this )
         {
-            if( definition->getName() == name )
+            if( definition.getName() == name )
             { 
-                return *definition;
+                return definition;
             }
+            i++;
         }
 
         throw std::out_of_range("Definition name not found in ObjectTable.");

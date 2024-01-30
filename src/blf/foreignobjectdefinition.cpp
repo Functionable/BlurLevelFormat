@@ -11,7 +11,7 @@ namespace blf
         for(ObjectAttribute attribute : m_attributes )
         {
             const BLF_TYPE type = attribute.getType();
-            const size_t offset = blf::measureData(ctx, this, type, head);
+            const size_t offset = blf::dataLength(ctx, this, type, head);
             blf::deserialize(ctx, this, type, whead, head);
             whead += offset;
             head += offset;
@@ -23,12 +23,12 @@ namespace blf
         return;
     }
 
-    size_t ForeignObjectDefinition::measureSpan(SerializationContext& ctx, const char* data) const
+    size_t ForeignObjectDefinition::dataLength(SerializationContext& ctx, const char* data) const
     {
         return -1;
     }
 
-    size_t ForeignObjectDefinition::calculateSpan(SerializationContext& ctx, const char* instance) const
+    size_t ForeignObjectDefinition::serializedLength(SerializationContext& ctx, const char* instance) const
     {
         return -1;
     }

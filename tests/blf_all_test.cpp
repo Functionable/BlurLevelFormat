@@ -24,6 +24,7 @@ bool test()
 {
     blf::LocalObjectTable localObjectTable;
 
+
     Bar bars[] = {
         {false, 2, 3, 7},
         {true, 4, 3, 8},

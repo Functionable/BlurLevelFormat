@@ -142,7 +142,7 @@ bool test()
 
     GameState aState;
     GameState blankState = makeblank();
-    blf::SerializationContext ctx = {blf::CommonTable::empty()};
+    blf::SerializationContext ctx = {};
     assert(aState != blankState);
 
     {

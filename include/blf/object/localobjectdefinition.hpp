@@ -28,7 +28,7 @@ namespace blf
                 for( ClassObjectAttribute<T>* attribute : m_attributes )
                 {
                     attribute->deserialize(ctx, instance, head);
-                    head += attribute->measureSpan(ctx, head);
+                    head += attribute->dataLength(ctx, head);
                 }
             }
 
@@ -37,12 +37,12 @@ namespace blf
              * object is located at the beginning, the size of the object in
              * bytes will be measured.
              */
-            size_t measureSpan(SerializationContext& ctx, const char* data) const override
+            size_t dataLength(SerializationContext& ctx, const char* data) const override
             {
                 size_t size = 0;
                 for( ClassObjectAttribute<T>* attribute : m_attributes )
                 {
-                    size += attribute->measureSpan(ctx, data + size);
+                    size += attribute->dataLength(ctx, data + size);
                 }
                 return size;
             }
@@ -58,7 +58,7 @@ namespace blf
                 for( ClassObjectAttribute<T>* attribute : m_attributes )
                 {
                     attribute->serialize(ctx, instance, head);
-                    head += attribute->calculateSpan(ctx, instance);
+                    head += attribute->serializedLength(ctx, instance);
                 }
             }
 
@@ -71,20 +71,20 @@ namespace blf
              * Calculates the number of bytes the given object will span when
              * serialized as bytes.
              */
-            size_t calculateDataSpan(SerializationContext& ctx, const T* instance) const
+            size_t serializedLength(SerializationContext& ctx, const T* instance) const
             {
                 size_t size = 0;
                 for( ClassObjectAttribute<T>* attribute : m_attributes )
                 {
-                    size += attribute->calculateSpan(ctx, instance);
+                    size += attribute->serializedLength(ctx, instance);
                 }
                 return size;
             }
 
 
-            size_t calculateSpan(SerializationContext& ctx, const char* instance) const override
+            size_t serializedLength(SerializationContext& ctx, const char* instance) const override
             {
-                return calculateDataSpan(ctx, (const T*)instance);
+                return serializedLength(ctx, (const T*)instance);
             }
     };
 }

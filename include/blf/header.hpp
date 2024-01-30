@@ -1,29 +1,25 @@
 #pragma once
 
 #include "string.hpp"
+#include "version.hpp"
+#include "bakedlist.hpp"
 
 #include <cstdint>
 #include <vector>
 
 namespace blf
 {
+    struct HeaderFlag
+    {
+        String name;
+        String value;
+    };
+
     struct Header
     {
         String signature = "BLFF";
-        uint32_t major;
-        uint32_t minor;
-        uint32_t fix;
+        Version fileVersion;
 
-        uint8_t compressionFlags;
-    };
-
-    // SHOULD THIS EXIST?
-    struct FlagInfo
-    {
-        // Unused prior to 2.0.0.
-        // A headerflag is a single object with a 
-        // name labelling it.
-        uint16_t flagCount;
-        //std::vector<Flag>...
+        BakedList<HeaderFlag> flags;
     };
 }

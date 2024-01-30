@@ -15,9 +15,9 @@ namespace blf
             virtual ~ClassObjectAttribute() override = default;
 
             virtual void deserialize(SerializationContext& ctx, Class* instance, const char* sourceData) const = 0;
-            virtual size_t measureSpan(SerializationContext& ctx, const char* data) const = 0;
+            virtual size_t dataLength(SerializationContext& ctx, const char* data) const = 0;
             
             virtual void serialize(SerializationContext& ctx, const Class* instance, char* destinationData) const = 0;
-            virtual size_t calculateSpan(SerializationContext& ctx, const Class* instance) const = 0;
+            virtual size_t serializedLength(SerializationContext& ctx, const Class* instance) const = 0;
     };
 }

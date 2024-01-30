@@ -26,7 +26,6 @@ namespace blf
      * 3. ConstAccessorAttributeLocation<T>
      * - This method is used when the getter is a const method.
      */
-
     template<typename Class, typename T>
     struct MemberAttributeLocation
     {

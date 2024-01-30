@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../commontable.hpp"
+//#include "../commontable.hpp"
 
 namespace blf
 {
@@ -9,6 +9,6 @@ namespace blf
      */
     struct SerializationContext
     {
-        const CommonTable& table;
+        //const CommonTable& table;
     };
 }

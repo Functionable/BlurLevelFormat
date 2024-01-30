@@ -2,6 +2,7 @@
 
 #include "enums.hpp"
 #include "object/attributeprocedure.hpp"
+#include "object/foreignobjectdefinition.hpp"
 #include "objecttable.hpp"
 
 #include "object/objectattribute.hpp"
@@ -25,10 +26,6 @@ namespace blf
         BLF_TYPE type;
         typename AttribLoc::Store locationStore;
         typename AttribProc::Store procedureStore;
-
-        //const LocalObjectDefinition<T>* definition;
-
-        //NamedClassArgument(std::string name,)
     };
 
     template<typename T>
@@ -49,113 +46,129 @@ namespace blf
         }
     };
 
-    /*template<typename Class, typename T, typename = std::enable_if_t<!is_class_v<T>>>
-    NamedClassArgument<Class, T> arg(const std::string& name, 
-        T Class::* ptr, BLF_TYPE type = infer_v<std::decay_t<T>>)
+    /*template<typename SpecifiedClass, typename Tg, typename Ts>
+        ConstAccessorAttributeLocation<SpecifiedClass, Tg, Ts> loc(
+            Tg (SpecifiedClass::*getter)() const, void (SpecifiedClass::*setter)(Ts)
+        )
     {
-        //static_assert(infer_v<std::decay<T>> != TYPE_OBJECT, "A local class definition must be passed as the third argument to blf::arg.");
-        return {name, ptr, type, nullptr};
+        return {getter, setter};
     }
 
-    template<typename Class, typename T, typename = std::enable_if_t<is_class_v<T>>>
-    NamedClassArgument<Class, T> arg(const std::string& name, 
-        T Class::* ptr, const LocalObjectDefinition<T>& definition)
+    template<typename SpecifiedClass, typename ParentClass, 
+             typename Tg, typename Ts,
+                typename = std::enable_if_t<std::is_base_of_v<ParentClass, SpecifiedClass>>>
+        ConstAccessorAttributeLocation<SpecifiedClass, Tg, Ts> loc(
+            Tg (ParentClass::*getter)() const, void (ParentClass::*setter)(Ts)
+        )
     {
-        return {name, ptr, TYPE_OBJECT, &definition};
+        return {getter, setter};
     }*/
 
-    // OVERLOADS OF ARG FOR MEMBER POINTERS
-    template<typename C, typename T, typename = std::enable_if_t<!is_class_v<T>>>
-    NamedClassArgument<C, T, MemberAttributeLocation<C,T>, GenericAttributeProcedure<C, T>> arg(
-        const std::string& name, T C::* ptr)
+    template<typename C, typename T, 
+        typename AttributeProcedure = infer_attribute_procedure_t<T>,
+        typename... Args>
+    NamedClassArgument<C, T, MemberAttributeLocation<C,T>, AttributeProcedure> arg(
+        const std::string& name, T C::* ptr, Args&&... args)
     {
         const BLF_TYPE type = infer_v<std::decay_t<T>>;
 
-        return {name, type, ptr};
+        return {name, type, ptr, 
+            typename AttributeProcedure::Store(std::forward<Args>(args)...)
+        };
     }
 
-    template<typename C, typename T, typename = std::enable_if_t<is_class_v<T>>>
-    NamedClassArgument<C, T, MemberAttributeLocation<C, T>, ObjectAttributeProcedure<C, T>> arg(const std::string& name, 
-        T C::* ptr, const LocalObjectDefinition<T>& definition)
-    {
-        return {name, TYPE_OBJECT, ptr, &definition};
-    }
-
-    // OVERLOADS OF ARG FOR ACCESSOR FUNCTIONS.
-    template<typename C, typename T, typename = std::enable_if_t<!is_class_v<T>>>
-    NamedClassArgument<C, T, ConstAccessorAttributeLocation<C,T>, GenericAttributeProcedure<C, T>> arg(
-        const std::string& name, T (C::*getter)() const, void (C::*setter)(T) )
+    template<typename C, typename T, 
+        typename AttributeLocation,
+        typename AttributeProcedure = infer_attribute_procedure_t<T>,
+        typename... Args>
+    NamedClassArgument<C, T, AttributeLocation, AttributeProcedure> arg(
+        const std::string& name, const AttributeLocation& location, Args&&... args)
     {
         const BLF_TYPE type = infer_v<std::decay_t<T>>;
 
-        return {name, type, {getter, setter}};
+        return {name, type, location, 
+            typename AttributeProcedure::Store(std::forward<Args>(args)...)
+        };
     }
 
-    // OVERLOADS OF ARG FOR ACCESSOR FUNCTIONS.
-    template<typename C, typename T, typename = std::enable_if_t<!is_class_v<T>>>
-    NamedClassArgument<C, T, ConstAccessorAttributeLocation<C,const T&>, GenericAttributeProcedure<C, T>> arg(
-        const std::string& name, const T& (C::*getter)() const, void (C::*setter)(const T&) )
+    template<typename C,
+        typename Tg, typename Ts, typename T=std::decay_t<Ts>,
+        typename AttributeProcedure = infer_attribute_procedure_t<T>,
+        typename... Args>
+    NamedClassArgument<C, T, ConstAccessorAttributeLocation<C,Tg, Ts>, AttributeProcedure> arg(
+        const std::string& name, Tg (C::*getter)() const, void (C::*setter)(Ts), Args&&... args)
     {
+        // TODO: throw legible  error when const on getter but not on setter.
+        // TODO: throw legible error when class mismatch on function
         const BLF_TYPE type = infer_v<std::decay_t<T>>;
 
-        return {name, type, {getter, setter}};
+        return {name, type, 
+            {getter, setter}, 
+            typename AttributeProcedure::Store(std::forward<Args>(args)...)
+        };
     }
 
-    template<typename C, typename T, typename Tg, typename Ts, typename = std::enable_if_t<is_class_v<T>>>
-    NamedClassArgument<C, T, ConstAccessorAttributeLocation<C, Tg, Ts>, ObjectAttributeProcedure<C, T>> arg(
-        const std::string& name,  Tg (C::*getter)() const, void (C::*setter)(Ts), 
-        const LocalObjectDefinition<T>& definition)
-    {
-        static_assert(std::is_same_v<T, std::decay_t<std::remove_pointer_t<Tg>>>, "The return type of the getter method must be the same as the argument type.");
-        static_assert(std::is_same_v<T, std::decay_t<std::remove_pointer_t<Ts>>>, "The parameter of the setter method must be the same as the argument type.");
-
-        const BLF_TYPE type = infer_v<std::decay_t<T>>;
-
-        return {name, type, {getter, setter}, &definition};
-    }
+    template<typename C, typename C2,
+        typename Tg, typename Ts, typename T=std::decay_t<Ts>,
+        typename AttributeProcedure = infer_attribute_procedure_t<T>,
+        typename... Args>
+    NamedClassArgument<C, T, ConstAccessorAttributeLocation<C,Tg, Ts>, AttributeProcedure> arg(
+        const std::string& name, Tg (C2::*getter)() const, void (C2::*setter)(Ts), Args&&... args)
+        {
+            return arg<C, Tg, Ts, T, AttributeProcedure, Args...>(
+                name, (Tg (C::*)() const)getter, 
+                    (void (C::*)(Ts))setter, std::forward<Args>(args)...
+            );
+        }
 
     class LocalObjectTable
     {
         private:
-            std::vector<ObjectAttribute*> m_attributeStore;
+            typedef std::pair<ObjectAttribute*, std::string> NamedAttributePair;
+
+            std::vector<NamedAttributePair> m_attributeStore;
             std::vector<ObjectDefinition*> m_definitionStore;
             std::map<std::string, void*(*)()> m_constructors;
             std::map<std::string, void(*)(void*)> m_destructors;
             std::vector<std::pair<void*, void(*)(void*)>> m_destructionPairs;
             std::vector<void*> m_createdObjects;
 
-            template<typename Class, typename T, typename A, typename P>
-            inline void addArgumentToUnbakedList(UnbakedList<ClassObjectAttribute<Class>*>& list, 
-                const NamedClassArgument<Class, T, A, P>& argument)
+            template<typename Class, typename T, typename A, typename P, typename ArgumentClass>
+            inline void addArgumentToUnbakedList(const std::string& name,
+                UnbakedList<ClassObjectAttribute<Class>*>& list, 
+                const NamedClassArgument<ArgumentClass, T, A, P>& argument)
             {
+                static_assert(std::is_same_v<Class, ArgumentClass>, "Argument type is mismatched with definition type. It is possible that this is due to accessor methods from a parent class being used. In that case the parent class will automatically be inferred as the argument type. In order to prevent this, please use loc(getter, setter) to wrap your getters and setters.");
                 SpecializedClassObjectAttribute<Class, T, A, P>* specializedAttribute = new SpecializedClassObjectAttribute<Class, T, A, P>(
                     argument.name, argument.type, argument.locationStore, argument.procedureStore
                 );
 
-                m_attributeStore.push_back(specializedAttribute);
+                m_attributeStore.push_back({specializedAttribute, name});
 
                 list.add(specializedAttribute);
             }
 
             template<typename Class, typename T, typename... Args>
-            void addArgumentsToUnbakedList(UnbakedList<ClassObjectAttribute<Class>*>& list, 
+            void addArgumentsToUnbakedList(const std::string& name,
+                UnbakedList<ClassObjectAttribute<Class>*>& list, 
                 const T& argument, Args&&... args)
             {
-                addArgumentToUnbakedList(list, argument);
-                addArgumentsToUnbakedList(list, std::forward<Args>(args)...);
+                addArgumentToUnbakedList(name, list, argument);
+                addArgumentsToUnbakedList(name, list, std::forward<Args>(args)...);
             }
 
             template<typename Class>
-            void addArgumentsToUnbakedList(UnbakedList<ClassObjectAttribute<Class>*>& list)
+            void addArgumentsToUnbakedList(const std::string& name,
+                UnbakedList<ClassObjectAttribute<Class>*>& list)
             {}
 
             template<typename Class, typename... Args>
             BakedList<ClassObjectAttribute<Class>*> createBakedAttributeList(
-                Args&&... args)
+                const std::string& name, Args&&... args)
             {
                 UnbakedList<ClassObjectAttribute<Class>*> unbakedList;
                 
-                addArgumentsToUnbakedList(unbakedList, std::forward<Args>(args)...);
+                addArgumentsToUnbakedList(name, unbakedList, std::forward<Args>(args)...);
 
                 return unbakedList.bake();
             }
@@ -179,9 +192,9 @@ namespace blf
         public:
             ~LocalObjectTable()
             {
-                for( ObjectAttribute* attributePtr : m_attributeStore )
+                for( const NamedAttributePair& attrPair : m_attributeStore )
                 {
-                    delete attributePtr;
+                    delete attrPair.first;
                 }
                 for( ObjectDefinition* definitionPtr : m_definitionStore )
                 {
@@ -197,7 +210,7 @@ namespace blf
             template<typename Class, typename... Args>
             LocalObjectDefinition<Class>& define(const std::string& name, Args&&... args)
             {
-                BakedList<ClassObjectAttribute<Class>*> classAttributes = createBakedAttributeList<Class, Args...>(std::forward<Args>(args)...);
+                BakedList<ClassObjectAttribute<Class>*> classAttributes = createBakedAttributeList<Class, Args...>(name, std::forward<Args>(args)...);
                 
                 //LocalObjectDefinition<Class> objectDefinition(name, classAttributes);
                 LocalObjectDefinition<Class>* objectDefinition = new LocalObjectDefinition<Class>(name, classAttributes);
@@ -250,7 +263,41 @@ namespace blf
                     }
                 }
 
-                throw std::out_of_range("Given definition name not found in blf::LocalObjectTable")
+                throw std::out_of_range("Given definition name not found in blf::LocalObjectTable");
+            }
+
+            /**
+             * Takes all object definitions and their attributes
+             * and turns them into a normal ObjectTable.
+             * This is useful for serialization of the ObjectTable.
+             */
+            ObjectTable flatten()
+            {
+                UnbakedObjectTable table;
+
+                for(ObjectDefinition* definition : m_definitionStore)
+                {
+                    const std::string& name = definition->getName();
+                    UnbakedList<ObjectAttribute> attributes;
+
+                    for( const NamedAttributePair& pair : m_attributeStore )
+                    {
+                        if( pair.second == name )
+                        {
+                            ObjectAttribute* attribute = pair.first;
+                            attributes.add(ObjectAttribute(
+                                attribute->getName(), attribute->getType(),
+                                attribute->getObject()
+                            ));
+                        }
+                    }
+
+                    ForeignObjectDefinition foreignDefinition(name, attributes.bake());
+
+                    table.add(foreignDefinition);
+                }
+
+                return table.bake();
             }
     };
 }

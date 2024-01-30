@@ -1,7 +1,9 @@
 #pragma once
 
 #include "string.hpp"
+#include "bakedlist.hpp"
 
+#include <vector>
 #include <string>
 #include <cstdint>
 #include <type_traits>
@@ -21,12 +23,12 @@ namespace blf
 		TYPE_DOUBLE,
 		TYPE_STRING,
 		TYPE_OBJECT,
-		TYPE_OBJECTREFERENCE, // used to mean just object. now means object pointer or reference.
+		TYPE_COMPAT_OBJECTREFERENCE, // used to mean just object. now means object pointer or reference.
 
 		// Aliases for other types!
 		TYPE_BOOL = TYPE_BYTE,
 
-		//TYPE_COMPLEX, /** Represents small structs */
+		TYPE_LIST
 	};
 
 	template<int size>
@@ -78,6 +80,26 @@ namespace blf
 	};
 
 	template<typename T>
+	struct list_traits 
+	{
+		typedef void not_a_list;
+	};
+
+	template<typename T>
+	struct list_traits<std::vector<T>>
+	{
+		//using item_type = T;
+		typedef T item_type;
+	};
+
+	template<typename T>
+	struct list_traits<BakedList<T>>
+	{
+		//using item_type = T;
+		typedef T item_type;
+	};
+
+	template<typename T>
 	struct is_string : public std::false_type {};
 
 	template<>
@@ -86,11 +108,20 @@ namespace blf
 	template<>
 	struct is_string<String> : public std::true_type {};
 
+	template<typename T, typename Enable = void>
+	struct is_list : std::false_type {};
+
+	template<typename T>
+	struct is_list<T, std::void_t<typename list_traits<T>::item_type>> : std::true_type {};
+
+	template<typename T>
+	inline constexpr bool is_list_v = is_list<T>::value;
+
 	template<typename T>
 	inline constexpr bool is_string_v = is_string<T>::value;
 
 	template<typename T>
-	inline constexpr bool is_class_v = std::is_class_v<T> && !is_string_v<T>;
+	inline constexpr bool is_class_v = std::is_class_v<T> && !is_string_v<T> && !is_list_v<T>;
 
 	template<typename T>
 	inline constexpr bool is_indirect_type_v = std::is_pointer_v<T> || std::is_reference_v<T>;
@@ -117,13 +148,14 @@ namespace blf
 	};
 
 	template<typename T>
-	struct infer<T, std::enable_if_t<is_indirect_class_v<T>>>
+	struct infer<T, std::enable_if_t<is_list_v<T>>>
 	{
-		static constexpr BLF_TYPE type = TYPE_OBJECTREFERENCE;
+		static constexpr BLF_TYPE type = TYPE_LIST;
 	};
 
 	template<typename T>
-	struct infer<T, std::enable_if_t<std::is_integral_v<T>>>
+	struct infer<T, 
+		std::enable_if_t<std::is_integral_v<T>||std::is_enum_v<T>>>
 	{
 		static constexpr BLF_TYPE type = blf_integral_type<sizeof(T)>::type;
 	};

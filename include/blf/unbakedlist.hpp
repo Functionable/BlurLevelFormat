@@ -28,6 +28,10 @@ namespace blf
                 : m_vector(vector)
             {}
 
+            UnbakedList(const T* array, size_t size)
+                : m_vector(array, array+size)
+            {}
+
             UnbakedList(const std::initializer_list<T>& initializerList)
                 : m_vector(initializerList)
             {}

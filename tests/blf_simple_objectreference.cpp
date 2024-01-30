@@ -75,7 +75,6 @@ bool test()
         blf::arg("Texture", &WorldObject::getTexture, &WorldObject::setTexture, textureDefinition)
     );*/
 
-
     for(int i = 0; i < 1024; i++)
     {
         delete objects[i];

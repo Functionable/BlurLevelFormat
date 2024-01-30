@@ -26,8 +26,7 @@ bool test()
         {"Z", blf::TYPE_FLOAT}
     };
 
-    blf::CommonTable table = blf::CommonTable::empty();
-    blf::SerializationContext ctx = {table};
+    blf::SerializationContext ctx = {};
 
     blf::ForeignObjectDefinition vectorDefinition("Vector", attrList.bake());
 

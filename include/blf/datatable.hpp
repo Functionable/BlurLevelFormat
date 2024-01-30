@@ -7,7 +7,6 @@
 #include "objectdata.hpp"
 #include "unbakedlist.hpp"
 
-#include "commontable.hpp"
 #include "localobjecttable.hpp"
 
 #include "object/objectdefinition.hpp"
@@ -20,6 +19,10 @@ namespace blf
     {
         void* data;
         ObjectDefinition* definition;
+
+        ObjectView(void* dataPtr, ObjectDefinition* definitionPtr)
+            : data(dataPtr), definition(definitionPtr)
+        {}
     };
 
     class DataTable
@@ -63,7 +66,7 @@ namespace blf
                 //ObjectView newObjectView = {&value, definition};
 
                 //m_views.push_back(newObjectView);
-                m_views.emplace_back(&value, definition);
+                m_views.emplace_back((void*)&value, (blf::ObjectDefinition*)&definition);
             }
 
             auto begin() { return m_views.begin(); }
@@ -74,10 +77,10 @@ namespace blf
                 UnbakedList<ObjectData> list;
                 for(const ObjectView& view : m_views)
                 {
-                    view.definition->calculateSpan(view.data);
+                    view.definition->serializedLength(view.data);
                 }
             }*/
 
             size_t size() const { return m_views.size(); }
-    }
+    };
 }

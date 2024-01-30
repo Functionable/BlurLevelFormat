@@ -8,13 +8,13 @@
 
 namespace blf
 {
-    template<typename T, typename Enable = void, typename = std::enable_if_t<is_string_v<T>>>
-    struct StringConversionHelper
+    template<typename T, typename = std::enable_if_t<is_string_v<T>>>
+    struct StringSerializationHelper
     {
         /**
          * Measures the length of the string buffer - NULL byte.
          */
-        inline static int measure(const T* data);
+        inline static int serializedLength(const T* data);
 
         /**
          * Retrieves the internal char buffer of the string.
@@ -28,9 +28,9 @@ namespace blf
     };
 
     template<>
-    struct StringConversionHelper<std::string>
+    struct StringSerializationHelper<std::string>
     {
-        inline static int measure(const std::string* data)
+        inline static int serializedLength(const std::string* data)
         {
             return data->length();
         }
@@ -47,9 +47,9 @@ namespace blf
     };
 
     template<>
-    struct StringConversionHelper<String>
+    struct StringSerializationHelper<String>
     {
-        inline static int measure(const String* data)
+        inline static int serializedLength(const String* data)
         {
             return data->getLength();
         }

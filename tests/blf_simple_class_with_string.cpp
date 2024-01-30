@@ -58,7 +58,7 @@ bool testDeserialization(blf::LocalObjectTable& localTable, blf::LocalObjectDefi
     std::cout << "Test data: \n";
     value.print();
 
-    blf::SerializationContext ctx = {blf::CommonTable::empty()};
+    blf::SerializationContext ctx = {};
 
     std::cout << "CASE 1: blf::LocalObjectDefinition::deserialize()\n";
     definition.deserialize(ctx, &temp, databuf);
@@ -96,7 +96,7 @@ bool test()
         blf::arg("s_3", &Foo::s_3)
     );
 
-    blf::SerializationContext ctx = {blf::CommonTable::empty()};
+    blf::SerializationContext ctx = {};
 
     fooDefinition.serialize(ctx, &f1, dataBuf);
     successful &= testDeserialization(localObjectTable, fooDefinition, f1, dataBuf);

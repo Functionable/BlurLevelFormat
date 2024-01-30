@@ -16,7 +16,7 @@ namespace blf
 
             [TYPE_STRING] = DYNAMIC_TYPE,
             [TYPE_OBJECT] = DYNAMIC_TYPE,
-            [TYPE_OBJECTREFERENCE] = DYNAMIC_TYPE
+            [TYPE_COMPAT_OBJECTREFERENCE] = 0
         };
 
         return typeSizes[type];

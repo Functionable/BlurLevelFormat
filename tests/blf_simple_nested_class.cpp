@@ -66,12 +66,12 @@ bool performTest(char* databuf, GameObject& object, blf::LocalObjectDefinition<G
     std::cout << "Test case: \n";
     object.print();
 
-    blf::SerializationContext ctx = {blf::CommonTable::empty()};
+    blf::SerializationContext ctx = {};
 
     objectDefinition.serialize(ctx, &object, databuf);
 
-    const size_t measuredSpan = objectDefinition.measureSpan(ctx, databuf);
-    const size_t calculatedSpan = objectDefinition.calculateDataSpan(ctx, &object);
+    const size_t measuredSpan = objectDefinition.dataLength(ctx, databuf);
+    const size_t calculatedSpan = objectDefinition.serializedLength(ctx, &object);
 
     if( measuredSpan != calculatedSpan )
     {

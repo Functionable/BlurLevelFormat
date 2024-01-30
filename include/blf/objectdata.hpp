@@ -13,6 +13,10 @@ namespace blf
             char* m_data;
 
         public:
+            ObjectData()
+                : m_size(0), m_data(nullptr)
+            {}
+
             ObjectData(char* data, size_t size)
                 : m_size(size)
             {
